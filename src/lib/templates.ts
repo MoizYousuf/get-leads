@@ -8,6 +8,19 @@ export interface EmailTemplate {
 
 export const KHANANI_TEMPLATES: EmailTemplate[] = [
   {
+    id: "website-creation",
+    name: "Website Creation Proposal",
+    description: "Cold pitch for businesses listed without an active website.",
+    defaultSubject: "Building a professional website for {{name}} - Khanani Innovations",
+    defaultBody: `I was looking up local services in {{city}} and came across {{name}}. I noticed that your business is currently operating without an active website.
+
+In today's digital landscape, having a professional online presence is critical—it serves as your 24/7 storefront, establishes trust with prospective clients, and helps you stand out in search engines.
+
+At Khanani Innovations, we build clean, modern, and mobile-friendly websites designed to attract local clients. We can set up a beautiful landing page, contact forms, and lead collection workflows for {{name}} in just a few days.
+
+Would you be open to a quick, complimentary discussion about how we can establish your online presence?`
+  },
+  {
     id: "website-enhancement",
     name: "Website Enhancement Proposal",
     description: "Pitch for improving an existing client's website design and performance.",

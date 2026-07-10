@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { findLeads, Lead } from "@/lib/leadsData";
+import { useToast } from "@/components/ui/Toast";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Search,
@@ -26,6 +27,7 @@ import {
   MapPin,
   History,
   Clock,
+  Plus,
   X
 } from "lucide-react";
 
@@ -88,6 +90,7 @@ const tableRowVariants = {
 
 export default function LeadsDashboard() {
   const router = useRouter();
+  const { toast } = useToast();
   
   // Structured search inputs
   const [niche, setNiche] = useState("");
@@ -148,6 +151,7 @@ export default function LeadsDashboard() {
   const [autoFindStatusText, setAutoFindStatusText] = useState("");
   const cancelAutoFindRef = useRef(false);
   const [fetchingTrends, setFetchingTrends] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
@@ -737,6 +741,64 @@ export default function LeadsDashboard() {
     router.push("/");
   };
 
+  const handleImportToCRM = async () => {
+    if (selectedLeadIds.size === 0) return;
+
+    setIsImporting(true);
+    try {
+      const selectedLeads = filteredTableLeads.filter(l => selectedLeadIds.has(l.id));
+      const leadsToImport = selectedLeads.filter(l => !(l as any).isImported);
+      
+      if (leadsToImport.length === 0) {
+        setIsImporting(false);
+        return;
+      }
+      
+      const res = await fetch("/api/crm/leads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ leads: leadsToImport })
+      });
+      
+      const data = await res.json();
+      
+      if (data.success) {
+        toast({
+          title: "Import Successful",
+          message: `Successfully imported ${leadsToImport.length} lead(s) to CRM!`,
+          type: "success"
+        });
+        
+        // Update local leads status to show 'Saved to CRM' instantly
+        setLeads(prevLeads =>
+          prevLeads.map(l => {
+            if (selectedLeadIds.has(l.id)) {
+              return { ...l, isImported: true } as any;
+            }
+            return l;
+          })
+        );
+        
+        setSelectedLeadIds(new Set());
+      } else {
+        toast({
+          title: "Import Failed",
+          message: data.error || "Failed to import leads to CRM",
+          type: "error"
+        });
+      }
+    } catch (err: any) {
+      console.error(err);
+      toast({
+        title: "Import Error",
+        message: err.message || "An unexpected error occurred",
+        type: "error"
+      });
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       
@@ -1310,13 +1372,34 @@ export default function LeadsDashboard() {
             </div>
 
             {selectedLeadIds.size > 0 && (
-              <button
-                onClick={handleExportToOutreach}
-                className="bg-gradient-to-r from-sky-500 to-indigo-500 hover:from-sky-400 hover:to-indigo-400 text-white font-bold px-4.5 py-2.5 rounded-xl text-xs transition-all shadow-[0_4px_12px_rgba(14,165,233,0.25)] hover:shadow-[0_4px_16px_rgba(14,165,233,0.4)] flex items-center justify-center gap-1.5 cursor-pointer md:shrink-0 hover:-translate-y-[1px] active:scale-[0.98]"
-              >
-                Send Bulk Outreach ({selectedLeadIds.size})
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
+              <div className="flex items-center gap-2">
+                {(() => {
+                  const selectedNotImportedCount = leads.filter(
+                    l => selectedLeadIds.has(l.id) && !(l as any).isImported
+                  ).length;
+
+                  if (selectedNotImportedCount === 0) return null;
+
+                  return (
+                    <button
+                      type="button"
+                      onClick={handleImportToCRM}
+                      disabled={isImporting}
+                      className="bg-slate-900 border border-slate-800 hover:bg-slate-850 hover:border-slate-700 text-indigo-400 font-bold px-4.5 py-2.5 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 shadow-[0_0_12px_rgba(99,102,241,0.05)] hover:shadow-[0_0_15px_rgba(99,102,241,0.15)] active:scale-[0.98]"
+                    >
+                      <Plus className="w-3.5 h-3.5 stroke-[3px]" />
+                      {isImporting ? "Importing..." : `Import ${selectedNotImportedCount} to CRM`}
+                    </button>
+                  );
+                })()}
+                <button
+                  onClick={handleExportToOutreach}
+                  className="bg-gradient-to-r from-sky-500 to-indigo-500 hover:from-sky-400 hover:to-indigo-400 text-slate-950 font-bold px-4.5 py-2.5 rounded-xl text-xs transition-all shadow-[0_4px_12px_rgba(14,165,233,0.25)] hover:shadow-[0_4px_16px_rgba(14,165,233,0.4)] flex items-center justify-center gap-1.5 cursor-pointer md:shrink-0 hover:-translate-y-[1px] active:scale-[0.98]"
+                >
+                  Send Bulk Outreach ({selectedLeadIds.size})
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
             )}
           </div>
 
@@ -1372,7 +1455,15 @@ export default function LeadsDashboard() {
                         )}
                       </td>
                       <td className="py-3 px-4 font-bold text-slate-100 group-hover:text-sky-300 transition-colors text-sm">
-                        {lead.name}
+                        <div className="flex items-center gap-2">
+                          <span>{lead.name}</span>
+                          {(lead as any).isImported && (
+                            <span className="text-[9px] font-black uppercase tracking-wider bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-2 py-0.5 rounded-full flex items-center gap-1 animate-pulse">
+                              <CheckCircle className="w-2.5 h-2.5 text-indigo-400 stroke-[3]" />
+                              Saved to CRM
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="py-3 px-4 text-slate-300 font-medium">
                         {lead.owner}

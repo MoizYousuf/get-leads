@@ -16,7 +16,9 @@ import {
   CheckCircle,
   TrendingUp,
   MessageSquare,
-  DollarSign
+  DollarSign,
+  Users,
+  Search
 } from "lucide-react";
 
 export default function HeaderNav() {
@@ -26,7 +28,8 @@ export default function HeaderNav() {
 
   const navItems = [
     { href: "/", label: "Send Email", icon: Send },
-    { href: "/leads", label: "Lead Finder", icon: Building2 },
+    { href: "/crm", label: "CRM Leads", icon: Users },
+    { href: "/leads", label: "Lead Finder", icon: Search },
     { href: "/inbox", label: "Inbox", icon: Inbox },
     { href: "/history", label: "History", icon: Calendar },
   ];

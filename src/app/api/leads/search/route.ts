@@ -1,6 +1,34 @@
 import { NextRequest, NextResponse } from "next/server";
 import { findLeads as getMockLeads } from "@/lib/leadsData";
 import { getCachedLead, setCachedLead } from "@/lib/leadsCache";
+import { getSupabaseServerClient, isSupabaseConfigured } from "@/lib/supabase";
+
+async function appendCRMStatus(leads: any[]): Promise<any[]> {
+  if (isSupabaseConfigured() && leads.length > 0) {
+    try {
+      const supabase = getSupabaseServerClient();
+      if (supabase) {
+        const placeIds = leads.map((l) => l.placeId).filter(Boolean);
+        if (placeIds.length > 0) {
+          const { data: existingLeads } = await supabase
+            .from("leads")
+            .select("place_id")
+            .in("place_id", placeIds);
+
+          if (existingLeads && existingLeads.length > 0) {
+            const existingSet = new Set(existingLeads.map((l: any) => l.place_id));
+            leads.forEach((lead) => {
+              lead.isImported = existingSet.has(lead.placeId);
+            });
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Failed to check existing CRM leads:", err);
+    }
+  }
+  return leads;
+}
 
 // Helper to crawl a homepage and search for email addresses
 async function extractEmailFromWebsite(url: string): Promise<string | null> {
@@ -100,10 +128,11 @@ export async function GET(req: NextRequest) {
     if (!apiKey) {
       console.log("SerpApi API key missing, falling back to mock leads database.");
       const mockLeads = getMockLeads(finalQuery, filter as any);
+      const leadsWithCRMStatus = await appendCRMStatus(mockLeads);
       return NextResponse.json({
         success: true,
         fallback: true,
-        data: mockLeads
+        data: leadsWithCRMStatus
       });
     }
 
@@ -219,11 +248,12 @@ export async function GET(req: NextRequest) {
     });
 
     const enrichedLeads = await Promise.all(crawlPromises);
+    const leadsWithCRMStatus = await appendCRMStatus(enrichedLeads);
 
     return NextResponse.json({
       success: true,
       fallback: false,
-      data: enrichedLeads
+      data: leadsWithCRMStatus
     });
 
   } catch (error: any) {
@@ -232,12 +262,13 @@ export async function GET(req: NextRequest) {
     const query = new URL(req.url).searchParams.get("q") || "";
     const filter = new URL(req.url).searchParams.get("filter") || "all";
     const mockLeads = getMockLeads(query, filter as any);
+    const leadsWithCRMStatus = await appendCRMStatus(mockLeads);
     
     return NextResponse.json({
       success: true,
       fallback: true,
       error: error.message || "Failed to search leads using API.",
-      data: mockLeads
+      data: leadsWithCRMStatus
     });
   }
 }

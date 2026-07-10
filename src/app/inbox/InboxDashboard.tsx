@@ -298,286 +298,315 @@ export default function InboxDashboard() {
         </div>
       </div>
 
-      {loading ? (
-        <div className="flex flex-col items-center justify-center min-h-[350px] gap-3 bg-slate-900/25 border border-slate-850 rounded-xl p-8">
-          <div className="w-10 h-10 border-4 border-sky-500/20 border-t-sky-500 rounded-full animate-spin"></div>
-          <p className="text-slate-400 text-xs animate-pulse font-medium">Loading leads replies inbox...</p>
-        </div>
-      ) : emails.length === 0 ? (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.97 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.3 }}
-          className="flex flex-col items-center justify-center min-h-[350px] text-center p-8 bg-slate-900/20 border border-slate-850 rounded-xl"
-        >
-          <div className="w-14 h-14 bg-slate-900 border border-slate-800 rounded-full flex items-center justify-center text-slate-500 mb-4 relative">
-            <span className="absolute inset-0 rounded-full border border-sky-500/25 animate-ping opacity-60" />
-            <Inbox className="w-6 h-6 text-sky-400/80" />
+      {/* Main Container for Inbox Grid with Scanning Loader */}
+      <div className="relative bg-slate-900/40 border border-slate-800 rounded-xl overflow-hidden backdrop-blur-sm min-h-[350px]">
+        {/* Glowing Scanner Line Loader (Premium Reload effect) */}
+        {loading && (
+          <div className="absolute top-0 left-0 right-0 h-[3px] bg-sky-500/10 overflow-hidden z-30">
+            <motion.div
+              className="w-1/3 h-full bg-gradient-to-r from-transparent via-sky-400 to-transparent"
+              animate={{ x: ["-100%", "300%"] }}
+              transition={{ duration: 1.2, repeat: Infinity, ease: "linear" }}
+            />
           </div>
-          <h3 className="font-bold text-slate-200">Your Inbox is Empty</h3>
-          <p className="text-slate-400 text-xs max-w-sm mt-1 mb-5 leading-relaxed">
-            You haven't received any email webhooks yet. Click "Simulate Reply" above to test how incoming leads emails are captured.
-          </p>
-          <motion.button
-            whileHover={{ scale: 1.03 }}
-            whileTap={{ scale: 0.97 }}
-            onClick={simulateIncomingEmail}
-            className="bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-white font-bold px-5 py-2.5 rounded-lg text-xs cursor-pointer shadow-lg transition-all hover:shadow-[0_0_20px_rgba(14,165,233,0.3)]"
-          >
-            Trigger Simulated Reply Email
-          </motion.button>
-        </motion.div>
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-          
-          {/* Email List Left Panel */}
-          <div className="lg:col-span-5 bg-slate-900/40 border border-slate-800 rounded-xl overflow-hidden flex flex-col h-[580px] backdrop-blur-sm">
-            <div className="p-4 border-b border-slate-800 bg-slate-950/40 flex justify-between items-center">
-              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                All Message Threads
-              </span>
-              <span className="text-[10px] bg-slate-950 border border-slate-900 text-sky-400 px-2 py-0.5 rounded font-mono font-bold">
-                {totalCount} Total
-              </span>
-            </div>
+        )}
 
-            {/* Filter & Autocomplete Search Row */}
-            <div className="p-3 bg-slate-950/60 border-b border-slate-800 flex flex-col gap-2 relative z-20">
-              {/* Search Keywords Input */}
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Search subject or body..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="w-full bg-slate-900/80 border border-slate-800 focus:border-sky-500/50 rounded-lg py-1.5 pl-8 pr-7 text-xs text-slate-200 placeholder-slate-500 focus:outline-none transition-all"
-                />
-                <span className="absolute left-2.5 top-2 text-slate-500">
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+        {loading && emails.length === 0 ? (
+          /* Loading Placeholder Skeletons */
+          <div className="p-8 space-y-6">
+            <div className="h-6 w-1/4 bg-slate-850 rounded animate-pulse" />
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              <div className="lg:col-span-5 space-y-4">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="p-4 bg-slate-900/60 border border-slate-800/80 rounded-xl animate-pulse space-y-3">
+                    <div className="h-3.5 w-1/3 bg-slate-850 rounded" />
+                    <div className="h-3 w-3/4 bg-slate-850 rounded" />
+                    <div className="h-2 w-full bg-slate-900 rounded" />
+                  </div>
+                ))}
+              </div>
+              <div className="lg:col-span-7 bg-slate-950/20 border border-slate-850/60 rounded-xl p-8 flex flex-col items-center justify-center min-h-[300px]">
+                <div className="w-10 h-10 border-4 border-sky-500/15 border-t-sky-500 rounded-full animate-spin mb-4" />
+                <span className="text-xs text-slate-500 animate-pulse">Initializing inbox...</span>
+              </div>
+            </div>
+          </div>
+        ) : !loading && emails.length === 0 && !search && !selectedSender ? (
+          /* Real Empty State (no search parameters) */
+          <motion.div
+            initial={{ opacity: 0, scale: 0.97 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.3 }}
+            className="flex flex-col items-center justify-center min-h-[350px] text-center p-8 bg-slate-900/20"
+          >
+            <div className="w-14 h-14 bg-slate-900 border border-slate-800 rounded-full flex items-center justify-center text-slate-500 mb-4 relative">
+              <span className="absolute inset-0 rounded-full border border-sky-500/25 animate-ping opacity-60" />
+              <Inbox className="w-6 h-6 text-sky-400/80" />
+            </div>
+            <h3 className="font-bold text-slate-200">Your Inbox is Empty</h3>
+            <p className="text-slate-400 text-xs max-w-sm mt-1 mb-5 leading-relaxed">
+              You haven't received any email webhooks yet. Click "Simulate Reply" above to test how incoming leads emails are captured.
+            </p>
+            <motion.button
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={simulateIncomingEmail}
+              className="bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-white font-bold px-5 py-2.5 rounded-lg text-xs cursor-pointer shadow-lg transition-all hover:shadow-[0_0_20px_rgba(14,165,233,0.3)]"
+            >
+              Trigger Simulated Reply Email
+            </motion.button>
+          </motion.div>
+        ) : (
+          /* Standard Interactive Grid (with in-place loading transparency) */
+          <div className={`grid grid-cols-1 lg:grid-cols-12 items-stretch min-h-[580px] transition-opacity duration-250 ${loading ? "opacity-60 pointer-events-none" : "opacity-100"}`}>
+            
+            {/* Email List Left Panel */}
+            <div className="lg:col-span-5 bg-slate-900/40 border border-slate-800 rounded-xl overflow-hidden flex flex-col h-[580px] backdrop-blur-sm">
+              <div className="p-4 border-b border-slate-800 bg-slate-950/40 flex justify-between items-center">
+                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                  All Message Threads
                 </span>
-                {search && (
-                  <button
-                    onClick={() => setSearch("")}
-                    className="absolute right-2 top-2 text-slate-400 hover:text-slate-200 cursor-pointer"
-                  >
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                  </button>
-                )}
+                <span className="text-[10px] bg-slate-950 border border-slate-900 text-sky-400 px-2 py-0.5 rounded font-mono font-bold">
+                  {totalCount} Total
+                </span>
               </div>
 
-              {/* Searchable Sender Autocomplete Suggestion */}
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Filter by sender email..."
-                  value={senderInput}
-                  onChange={(e) => {
-                    setSenderInput(e.target.value);
-                    setSelectedSender(e.target.value); // Apply filter dynamically as they type
-                    setShowSenderDropdown(true);
-                  }}
-                  onFocus={() => setShowSenderDropdown(true)}
-                  className="w-full bg-slate-900/80 border border-slate-800 focus:border-sky-500/50 rounded-lg py-1.5 pl-8 pr-7 text-xs text-slate-200 placeholder-slate-500 focus:outline-none transition-all"
-                />
-                <span className="absolute left-2.5 top-2.5 text-slate-500">
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
-                </span>
-                {(senderInput || selectedSender) && (
-                  <button
-                    onClick={() => {
-                      setSenderInput("");
-                      setSelectedSender("");
-                      setShowSenderDropdown(false);
-                    }}
-                    className="absolute right-2 top-2 text-slate-400 hover:text-slate-200 cursor-pointer"
-                  >
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                  </button>
-                )}
+              {/* Filter & Autocomplete Search Row */}
+              <div className="p-3 bg-slate-950/60 border-b border-slate-800 flex flex-col gap-2 relative z-20">
+                {/* Search Keywords Input */}
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Search subject or body..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="w-full bg-slate-900/80 border border-slate-800 focus:border-sky-500/50 rounded-lg py-1.5 pl-8 pr-7 text-xs text-slate-200 placeholder-slate-500 focus:outline-none transition-all"
+                  />
+                  <span className="absolute left-2.5 top-2 text-slate-500">
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                  </span>
+                  {search && (
+                    <button
+                      onClick={() => setSearch("")}
+                      className="absolute right-2 top-2 text-slate-400 hover:text-slate-200 cursor-pointer"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                  )}
+                </div>
 
-                {/* Autocomplete Dropdown List */}
-                <AnimatePresence>
-                  {showSenderDropdown && (
-                    <>
-                      <div className="fixed inset-0 z-10" onClick={() => setShowSenderDropdown(false)} />
-                      <motion.div
-                        initial={{ opacity: 0, y: 5 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 5 }}
-                        className="absolute left-0 right-0 top-full mt-1.5 bg-slate-900 border border-slate-800 rounded-lg shadow-2xl z-20 max-h-48 overflow-y-auto divide-y divide-slate-850 scrollbar-thin"
-                      >
-                        {senders.filter(s => 
-                          s.email.toLowerCase().includes(senderInput.toLowerCase()) || 
-                          s.name.toLowerCase().includes(senderInput.toLowerCase())
-                        ).length === 0 ? (
-                          <div className="p-3 text-[11px] text-slate-500 text-center">
-                            No matching senders
-                          </div>
-                        ) : (
-                          senders.filter(s => 
+                {/* Searchable Sender Autocomplete Suggestion */}
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Filter by sender email..."
+                    value={senderInput}
+                    onChange={(e) => {
+                      setSenderInput(e.target.value);
+                      setSelectedSender(e.target.value); // Apply filter dynamically as they type
+                      setShowSenderDropdown(true);
+                    }}
+                    onFocus={() => setShowSenderDropdown(true)}
+                    className="w-full bg-slate-900/80 border border-slate-800 focus:border-sky-500/50 rounded-lg py-1.5 pl-8 pr-7 text-xs text-slate-200 placeholder-slate-500 focus:outline-none transition-all"
+                  />
+                  <span className="absolute left-2.5 top-2.5 text-slate-500">
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                  </span>
+                  {(senderInput || selectedSender) && (
+                    <button
+                      onClick={() => {
+                        setSenderInput("");
+                        setSelectedSender("");
+                        setShowSenderDropdown(false);
+                      }}
+                      className="absolute right-2 top-2 text-slate-400 hover:text-slate-200 cursor-pointer"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                  )}
+
+                  {/* Autocomplete Dropdown List */}
+                  <AnimatePresence>
+                    {showSenderDropdown && (
+                      <>
+                        <div className="fixed inset-0 z-10" onClick={() => setShowSenderDropdown(false)} />
+                        <motion.div
+                          initial={{ opacity: 0, y: 5 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: 5 }}
+                          className="absolute left-0 right-0 top-full mt-1.5 bg-slate-900 border border-slate-800 rounded-lg shadow-2xl z-20 max-h-48 overflow-y-auto divide-y divide-slate-850 scrollbar-thin"
+                        >
+                          {senders.filter(s => 
                             s.email.toLowerCase().includes(senderInput.toLowerCase()) || 
                             s.name.toLowerCase().includes(senderInput.toLowerCase())
-                          ).map((s) => (
-                            <button
-                              key={s.email}
-                              onClick={() => {
-                                setSenderInput(s.email);
-                                setSelectedSender(s.email);
-                                setShowSenderDropdown(false);
-                              }}
-                              className="w-full text-left p-2.5 text-[11px] hover:bg-slate-850 hover:text-sky-300 transition-colors block cursor-pointer"
-                            >
-                              <span className="font-bold text-slate-200 block">{s.name || "Unknown"}</span>
-                              <span className="text-slate-400 block text-[10px] font-mono mt-0.5">{s.email}</span>
-                            </button>
-                          ))
-                        )}
-                      </motion.div>
-                    </>
-                  )}
-                </AnimatePresence>
-              </div>
-            </div>
-            
-            <div className="flex-1 overflow-y-auto divide-y divide-slate-850 scrollbar-thin">
-              <motion.div
-                variants={containerVariants}
-                initial="hidden"
-                animate="show"
-                className="divide-y divide-slate-850"
-              >
-                {emails.length === 0 ? (
-                  <div className="p-8 text-center text-xs text-slate-500">
-                    No search results match filters.
-                  </div>
-                ) : (
-                  emails.map((email) => {
-                    const isSelected = selectedEmail?.id === email.id;
-                    const formattedDate = new Date(email.date).toLocaleDateString(undefined, {
-                      month: "short",
-                      day: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit"
-                    });
-
-                    return (
-                      <motion.div
-                        variants={itemVariants}
-                        key={email.id}
-                        className="w-full text-left"
-                      >
-                        <button
-                          onClick={() => setSelectedEmail(email)}
-                          className={`w-full text-left p-4 transition-all duration-200 flex flex-col gap-2 cursor-pointer relative overflow-hidden ${
-                            isSelected
-                              ? "bg-sky-500/[0.06] text-sky-200"
-                              : "hover:bg-slate-800/30 text-slate-300"
-                          }`}
-                        >
-                          {/* Dynamic Active Indicator Stripe */}
-                          {isSelected && (
-                            <motion.div
-                              layoutId="active-indicator"
-                              className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-sky-400 to-indigo-500"
-                              transition={{ type: "spring", stiffness: 350, damping: 30 }}
-                            />
+                          ).length === 0 ? (
+                            <div className="p-3 text-[11px] text-slate-500 text-center">
+                              No matching senders
+                            </div>
+                          ) : (
+                            senders.filter(s => 
+                              s.email.toLowerCase().includes(senderInput.toLowerCase()) || 
+                              s.name.toLowerCase().includes(senderInput.toLowerCase())
+                            ).map((s) => (
+                              <button
+                                key={s.email}
+                                onClick={() => {
+                                  setSenderInput(s.email);
+                                  setSelectedSender(s.email);
+                                  setShowSenderDropdown(false);
+                                }}
+                                className="w-full text-left p-2.5 text-[11px] hover:bg-slate-850 hover:text-sky-300 transition-colors block cursor-pointer"
+                              >
+                                <span className="font-bold text-slate-200 block">{s.name || "Unknown"}</span>
+                                <span className="text-slate-400 block text-[10px] font-mono mt-0.5">{s.email}</span>
+                              </button>
+                            ))
                           )}
-
-                          <div className="flex justify-between items-start w-full">
-                            <div className="flex items-center gap-1.5 min-w-0">
-                              <User className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                              <span className="font-bold text-xs text-slate-200 truncate">
-                                {email.fromName || email.from.split("@")[0]}
-                              </span>
-                            </div>
-                            <span className="text-[9px] text-slate-500 font-mono whitespace-nowrap">
-                              {formattedDate}
-                            </span>
-                          </div>
-
-                          <div className="space-y-1">
-                            <h4 className={`text-xs font-bold truncate ${isSelected ? "text-sky-300" : "text-slate-100"}`}>
-                              {email.subject}
-                            </h4>
-                            <p className="text-[11px] text-slate-400 line-clamp-2 leading-relaxed font-medium">
-                              {email.text || "No preview content available."}
-                            </p>
-                          </div>
-
-                          <div className="flex justify-between items-center text-[9px] text-slate-500 border-t border-slate-850/50 pt-2 mt-1">
-                            <span className="font-mono truncate max-w-[170px]">{email.from}</span>
-                            <div className="flex items-center gap-0.5 text-sky-400 font-bold">
-                              View Thread <ChevronRight className="w-3 h-3" />
-                            </div>
-                          </div>
-                        </button>
-                      </motion.div>
-                    );
-                  })
-                )}
-              </motion.div>
-            </div>
-
-            {/* Backend-controlled Pagination Footer */}
-            {totalPages > 1 && (
-              <div className="p-3 border-t border-slate-800 bg-slate-950/40 flex justify-between items-center text-xs">
-                <span className="text-slate-400 text-[10px]">
-                  Page <span className="font-bold text-slate-250">{page}</span> of <span className="font-bold text-slate-250">{totalPages}</span>
-                </span>
-                <div className="flex gap-1">
-                  <button
-                    disabled={page === 1}
-                    onClick={() => handlePageChange(page - 1)}
-                    className="px-2 py-1 rounded bg-slate-850 hover:bg-slate-800 border border-slate-800 text-slate-300 disabled:opacity-40 disabled:hover:bg-slate-850 cursor-pointer disabled:cursor-not-allowed text-[10px] font-semibold transition-all"
-                  >
-                    Prev
-                  </button>
-                  {Array.from({ length: totalPages }).map((_, i) => {
-                    const pageNum = i + 1;
-                    const isActive = pageNum === page;
-                    return (
-                      <button
-                        key={pageNum}
-                        onClick={() => handlePageChange(pageNum)}
-                        className={`w-6 h-6 rounded flex items-center justify-center font-bold text-[10px] transition-all cursor-pointer ${
-                          isActive 
-                            ? "bg-sky-500 text-white shadow-[0_2px_8px_rgba(14,165,233,0.3)]" 
-                            : "bg-slate-850 hover:bg-slate-800 text-slate-350 border border-slate-800"
-                        }`}
-                      >
-                        {pageNum}
-                      </button>
-                    );
-                  })}
-                  <button
-                    disabled={page === totalPages}
-                    onClick={() => handlePageChange(page + 1)}
-                    className="px-2 py-1 rounded bg-slate-850 hover:bg-slate-800 border border-slate-800 text-slate-300 disabled:opacity-40 disabled:hover:bg-slate-850 cursor-pointer disabled:cursor-not-allowed text-[10px] font-semibold transition-all"
-                  >
-                    Next
-                  </button>
+                        </motion.div>
+                      </>
+                    )}
+                  </AnimatePresence>
                 </div>
               </div>
-            )}
-          </div>
-
-          {/* Email Details View Right Panel */}
-          <div className="lg:col-span-7 bg-slate-900/40 border border-slate-800 rounded-xl overflow-hidden flex flex-col h-[580px] backdrop-blur-sm">
-            <AnimatePresence mode="wait">
-              {selectedEmail ? (
+              
+              <div className="flex-1 overflow-y-auto divide-y divide-slate-850 scrollbar-thin">
                 <motion.div
-                  key={selectedEmail.id}
-                  variants={readerVariants}
+                  variants={containerVariants}
                   initial="hidden"
                   animate="show"
-                  exit="hidden"
-                  className="flex flex-col h-full"
+                  className="divide-y divide-slate-850"
                 >
-                  {/* Header Info */}
-                  <div className="p-6 border-b border-slate-800 bg-slate-950/40 space-y-4">
-                    <div className="flex justify-between items-start gap-4">
-                      <div>
-                        <h2 className="text-base font-bold text-slate-100 leading-snug">
+                  {emails.length === 0 ? (
+                    <div className="p-8 text-center text-xs text-slate-500">
+                      No search results match filters.
+                    </div>
+                  ) : (
+                    emails.map((email) => {
+                      const isSelected = selectedEmail?.id === email.id;
+                      const formattedDate = new Date(email.date).toLocaleDateString(undefined, {
+                        month: "short",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit"
+                      });
+
+                      return (
+                        <motion.div
+                          variants={itemVariants}
+                          key={email.id}
+                          className="w-full text-left"
+                        >
+                          <button
+                            onClick={() => setSelectedEmail(email)}
+                            className={`w-full text-left p-4 transition-all duration-200 flex flex-col gap-2 cursor-pointer relative overflow-hidden ${
+                              isSelected
+                                ? "bg-sky-500/[0.06] text-sky-200"
+                                : "hover:bg-slate-800/30 text-slate-300"
+                            }`}
+                          >
+                            {/* Dynamic Active Indicator Stripe */}
+                            {isSelected && (
+                              <motion.div
+                                layoutId="active-indicator"
+                                className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-sky-400 to-indigo-500"
+                                transition={{ type: "spring", stiffness: 350, damping: 30 }}
+                              />
+                            )}
+
+                            <div className="flex justify-between items-start w-full">
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <User className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                                <span className="font-bold text-xs text-slate-200 truncate">
+                                  {email.fromName || email.from.split("@")[0]}
+                                </span>
+                              </div>
+                              <span className="text-[9px] text-slate-500 font-mono whitespace-nowrap">
+                                {formattedDate}
+                              </span>
+                            </div>
+
+                            <div className="space-y-1">
+                              <h4 className={`text-xs font-bold truncate ${isSelected ? "text-sky-300" : "text-slate-100"}`}>
+                                {email.subject}
+                              </h4>
+                              <p className="text-[11px] text-slate-400 line-clamp-2 leading-relaxed font-medium">
+                                {email.text || "No preview content available."}
+                              </p>
+                            </div>
+
+                            <div className="flex justify-between items-center text-[9px] text-slate-500 border-t border-slate-850/50 pt-2 mt-1">
+                              <span className="font-mono truncate max-w-[170px]">{email.from}</span>
+                              <div className="flex items-center gap-0.5 text-sky-400 font-bold">
+                                View Thread <ChevronRight className="w-3 h-3" />
+                              </div>
+                            </div>
+                          </button>
+                        </motion.div>
+                      );
+                    })
+                  )}
+                </motion.div>
+              </div>
+
+              {/* Backend-controlled Pagination Footer */}
+              {totalPages > 1 && (
+                <div className="p-3 border-t border-slate-800 bg-slate-950/40 flex justify-between items-center text-xs">
+                  <span className="text-slate-400 text-[10px]">
+                    Page <span className="font-bold text-slate-250">{page}</span> of <span className="font-bold text-slate-250">{totalPages}</span>
+                  </span>
+                  <div className="flex gap-1">
+                    <button
+                      disabled={page === 1}
+                      onClick={() => handlePageChange(page - 1)}
+                      className="px-2 py-1 rounded bg-slate-850 hover:bg-slate-800 border border-slate-800 text-slate-300 disabled:opacity-40 disabled:hover:bg-slate-850 cursor-pointer disabled:cursor-not-allowed text-[10px] font-semibold transition-all"
+                    >
+                      Prev
+                    </button>
+                    {Array.from({ length: totalPages }).map((_, i) => {
+                      const pageNum = i + 1;
+                      const isActive = pageNum === page;
+                      return (
+                        <button
+                          key={pageNum}
+                          onClick={() => handlePageChange(pageNum)}
+                          className={`w-6 h-6 rounded flex items-center justify-center font-bold text-[10px] transition-all cursor-pointer ${
+                            isActive 
+                              ? "bg-sky-500 text-white shadow-[0_2px_8px_rgba(14,165,233,0.3)]" 
+                              : "bg-slate-850 hover:bg-slate-800 text-slate-355 border border-slate-800"
+                          }`}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    })}
+                    <button
+                      disabled={page === totalPages}
+                      onClick={() => handlePageChange(page + 1)}
+                      className="px-2 py-1 rounded bg-slate-850 hover:bg-slate-800 border border-slate-800 text-slate-300 disabled:opacity-40 disabled:hover:bg-slate-850 cursor-pointer disabled:cursor-not-allowed text-[10px] font-semibold transition-all"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Email Details View Right Panel */}
+            <div className="lg:col-span-7 bg-slate-900/25 border-l border-slate-800 flex flex-col h-[580px] overflow-hidden">
+              <AnimatePresence mode="wait">
+                {selectedEmail ? (
+                  <motion.div
+                    key={selectedEmail.id}
+                    variants={readerVariants}
+                    initial="hidden"
+                    animate="show"
+                    exit="hidden"
+                    className="flex flex-col h-full overflow-hidden"
+                  >
+                    {/* Detail Panel Header */}
+                    <div className="p-6 border-b border-slate-800 bg-slate-950/20 flex flex-col md:flex-row justify-between md:items-center gap-4 shrink-0">
+                      <div className="min-w-0">
+                        <h2 className="font-bold text-slate-200 text-base truncate">
                           {selectedEmail.subject}
                         </h2>
                         <div className="flex flex-wrap gap-x-4 gap-y-1.5 mt-2 text-xs text-slate-400 items-center">
@@ -605,57 +634,58 @@ export default function InboxDashboard() {
                           whileHover={{ scale: 1.02 }}
                           whileTap={{ scale: 0.98 }}
                           onClick={() => deleteEmail(selectedEmail.id)}
-                          className="bg-slate-850 hover:bg-red-500/20 hover:text-red-300 hover:border-red-500/30 text-slate-400 border border-slate-700 p-2.5 rounded-lg cursor-pointer transition-all"
-                          title="Delete email"
+                          className="bg-red-500/10 hover:bg-red-500/20 text-red-300 border border-red-500/30 p-2.5 rounded-lg text-xs font-bold cursor-pointer transition-all flex items-center gap-1.5 hover:shadow-[0_0_15px_rgba(239,68,68,0.1)]"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
+                          Delete
                         </motion.button>
                       </div>
                     </div>
 
-                    <div className="flex justify-between items-center text-[10px] text-slate-500 border-t border-slate-850 pt-3">
-                      <span className="flex items-center gap-1 font-mono">
-                        <Clock className="w-3.5 h-3.5 text-slate-400" />
-                        {new Date(selectedEmail.date).toLocaleString()}
-                      </span>
+                    {/* Metadata Subheader bar */}
+                    <div className="px-6 py-3 bg-slate-950/30 border-b border-slate-850/60 flex justify-between items-center text-[10px] text-slate-500 shrink-0">
+                      <div className="flex items-center gap-1 font-mono">
+                        <Clock className="w-3 h-3" />
+                        <span>Received: {new Date(selectedEmail.date).toLocaleString()}</span>
+                      </div>
                       <span className="bg-slate-900 border border-slate-850 px-2 py-0.5 rounded text-slate-400 font-bold">
                         ID: {selectedEmail.id}
                       </span>
                     </div>
-                  </div>
 
-                  {/* Email Content Body */}
-                  <div className="flex-1 p-6 overflow-y-auto bg-slate-950/20 scrollbar-thin">
-                    {selectedEmail.html ? (
-                      // In a production app, we would sanitize the HTML. We display this inside a clean, light-mode background card for maximum readability (as HTML emails are styled for white backgrounds).
-                      <div 
-                        className="email-html-body text-slate-900 text-sm leading-relaxed font-sans bg-white p-6 rounded-xl border border-slate-200/80 shadow-md overflow-x-auto"
-                        dangerouslySetInnerHTML={{ __html: selectedEmail.html }}
-                      />
-                    ) : (
-                      <div className="text-slate-300 text-sm leading-relaxed whitespace-pre-wrap font-sans bg-slate-950/40 p-5 rounded-xl border border-slate-850 shadow-inner">
-                        {selectedEmail.text || "No email body present."}
-                      </div>
-                    )}
-                  </div>
+                    {/* Email Content Body */}
+                    <div className="flex-1 p-6 overflow-y-auto bg-slate-950/20 scrollbar-thin">
+                      {selectedEmail.html ? (
+                        // In a production app, we would sanitize the HTML. We display this inside a clean, light-mode background card for maximum readability (as HTML emails are styled for white backgrounds).
+                        <div 
+                          className="email-html-body text-slate-900 text-sm leading-relaxed font-sans bg-white p-6 rounded-xl border border-slate-200/80 shadow-md overflow-x-auto"
+                          dangerouslySetInnerHTML={{ __html: selectedEmail.html }}
+                        />
+                      ) : (
+                        <div className="text-slate-300 text-sm leading-relaxed whitespace-pre-wrap font-sans bg-slate-950/40 p-5 rounded-xl border border-slate-850 shadow-inner">
+                          {selectedEmail.text || "No email body present."}
+                        </div>
+                      )}
+                    </div>
 
-                </motion.div>
-              ) : (
-                <div className="flex flex-col items-center justify-center h-full text-center p-8">
-                  <div className="w-14 h-14 bg-slate-900 border border-slate-850 rounded-full flex items-center justify-center text-slate-600 mb-3">
-                    <MailOpen className="w-6 h-6 text-slate-500" />
+                  </motion.div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-full text-center p-8">
+                    <div className="w-14 h-14 bg-slate-900 border border-slate-850 rounded-full flex items-center justify-center text-slate-600 mb-3">
+                      <MailOpen className="w-6 h-6 text-slate-500" />
+                    </div>
+                    <h4 className="font-bold text-slate-300 text-sm">No Thread Selected</h4>
+                    <p className="text-slate-500 text-xs mt-1 leading-relaxed">
+                      Select an email thread from the left list to read its content.
+                    </p>
                   </div>
-                  <h4 className="font-bold text-slate-300 text-sm">No Thread Selected</h4>
-                  <p className="text-slate-500 text-xs mt-1 leading-relaxed">
-                    Select an email thread from the left list to read its content.
-                  </p>
-                </div>
-              )}
-            </AnimatePresence>
+                )}
+              </AnimatePresence>
+            </div>
+
           </div>
-
-        </div>
-      )}
+        )}
+      </div>
 
     </div>
   );

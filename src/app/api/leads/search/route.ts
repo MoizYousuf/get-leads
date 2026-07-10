@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { findLeads as getMockLeads } from "@/lib/leadsData";
+import { getCachedLead, setCachedLead } from "@/lib/leadsCache";
 
 // Helper to crawl a homepage and search for email addresses
 async function extractEmailFromWebsite(url: string): Promise<string | null> {
@@ -80,9 +81,17 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const query = searchParams.get("q") || "";
     const filter = searchParams.get("filter") || "all";
+    const start = searchParams.get("start") || "0";
 
     if (!query.trim()) {
       return NextResponse.json({ success: true, data: [] });
+    }
+
+    // Auto-correct postal-only searches (e.g. "90220") to find local businesses in that region
+    let finalQuery = query.trim();
+    const isPostalCode = /^[0-9a-zA-Z\s-]{3,10}$/.test(finalQuery) && /\d/.test(finalQuery) && !/[a-zA-Z]{4,}/.test(finalQuery);
+    if (isPostalCode) {
+      finalQuery = `businesses in ${finalQuery}`;
     }
 
     const apiKey = process.env.SERPAPI_API_KEY;
@@ -90,7 +99,7 @@ export async function GET(req: NextRequest) {
     // Fallback if SerpApi Key is missing
     if (!apiKey) {
       console.log("SerpApi API key missing, falling back to mock leads database.");
-      const mockLeads = getMockLeads(query, filter as any);
+      const mockLeads = getMockLeads(finalQuery, filter as any);
       return NextResponse.json({
         success: true,
         fallback: true,
@@ -98,17 +107,43 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // Query SerpApi's Google Local Engine
-    const searchUrl = `https://serpapi.com/search.json?engine=google_local&q=${encodeURIComponent(query)}&api_key=${apiKey}`;
-    const response = await fetch(searchUrl);
-    const result = await response.json();
+    // If filtering for website-less leads on the initial page, fetch 3 pages in parallel (60 listings) to maximize results
+    const offset = parseInt(start);
+    const fetchPage = async (pageOffset: number) => {
+      const url = `https://serpapi.com/search.json?engine=google_maps&q=${encodeURIComponent(finalQuery)}&type=search&start=${pageOffset}&api_key=${apiKey}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      if (data.error) {
+        throw new Error(data.error || "Failed to fetch from SerpApi");
+      }
+      return data.local_results || [];
+    };
 
-    if (result.error) {
-      console.error("SerpApi Error:", result.error);
-      throw new Error(result.error || "Failed to fetch from SerpApi");
+    let localResults: any[] = [];
+    if (filter === "without-website" && offset === 0) {
+      console.log("Without-website filter active on page 1: fetching 3 pages in parallel from SerpApi.");
+      try {
+        const pagesData = await Promise.all([
+          fetchPage(0),
+          fetchPage(20),
+          fetchPage(40)
+        ]);
+        const seen = new Set();
+        pagesData.flat().forEach(item => {
+          const id = item.place_id || item.title;
+          if (id && !seen.has(id)) {
+            seen.add(id);
+            localResults.push(item);
+          }
+        });
+      } catch (err: any) {
+        console.error("Error fetching concurrent pages:", err);
+        // Fallback to single page fetch
+        localResults = await fetchPage(0);
+      }
+    } else {
+      localResults = await fetchPage(offset);
     }
-
-    const localResults = result.local_results || [];
     const formattedLeads: any[] = [];
 
     // Parse listings
@@ -144,7 +179,9 @@ export async function GET(req: NextRequest) {
         phone,
         website,
         industry: query.split(" in ")[0]?.trim() || "Business",
-        city
+        city,
+        placeId: listing.place_id || null,
+        address: listing.address || null
       });
     }
 
@@ -158,20 +195,25 @@ export async function GET(req: NextRequest) {
 
     // Crawl emails concurrently for entries with websites
     const crawlPromises = filteredLeads.map(async (lead) => {
+      // 1. Check local cache first
+      const cached = getCachedLead(lead.placeId, lead.name, lead.city);
+      if (cached) {
+        if (cached.email) lead.email = cached.email;
+        if (cached.phone && (lead.phone === "N/A" || !lead.phone)) lead.phone = cached.phone;
+        if (lead.email) return lead;
+      }
+
+      // 2. Live crawl if cache is empty
       if (lead.website) {
         const email = await extractEmailFromWebsite(lead.website);
         if (email) {
           lead.email = email;
+          setCachedLead(lead.placeId, lead.name, lead.city, { email });
         } else {
-          // If crawl fails to extract email, fall back to a structured default based on company name
-          const cleanName = lead.name.toLowerCase().replace(/[^a-z0-9]/g, "");
-          const domain = lead.website.replace("https://", "").replace("http://", "").replace("www.", "").split("/")[0];
-          lead.email = `info@${domain}`;
+          lead.email = "";
         }
       } else {
-        // If there is no website, create a generic free email contact
-        const cleanName = lead.name.toLowerCase().replace(/[^a-z0-9]/g, "");
-        lead.email = `contact_${cleanName.substring(0, 8)}@gmail.com`;
+        lead.email = "";
       }
       return lead;
     });

@@ -7,6 +7,10 @@ export interface Lead {
   website: string | null;
   industry: string;
   city: string;
+  placeId?: string | null;
+  address?: string | null;
+  enrichAttempted?: boolean;
+  enrichFailed?: boolean;
 }
 
 // Pre-defined values to generate realistic data
@@ -105,7 +109,9 @@ export function findLeads(query: string, websiteFilter: "all" | "with-website" |
       phone,
       website,
       industry: industry.charAt(0).toUpperCase() + industry.slice(1),
-      city: city.charAt(0).toUpperCase() + city.slice(1)
+      city: city.charAt(0).toUpperCase() + city.slice(1),
+      placeId: `mock_place_${i}`,
+      address: `${Math.floor(rnd() * 999) + 1} Main St, ${city.charAt(0).toUpperCase() + city.slice(1)}`
     };
 
     // Apply Website Filter

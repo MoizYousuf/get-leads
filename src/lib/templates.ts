@@ -16,7 +16,7 @@ export const KHANANI_TEMPLATES: EmailTemplate[] = [
 
 In today's digital landscape, having a professional online presence is critical—it serves as your 24/7 storefront, establishes trust with prospective clients, and helps you stand out in search engines.
 
-At Khanani Innovations, we build clean, modern, and mobile-friendly websites designed to attract local clients. We can set up a beautiful landing page, contact forms, and lead collection workflows for {{name}} in just a few days.
+At Khanani Innovations (https://khananiinnovations.com), we build clean, modern, and mobile-friendly websites designed to attract local clients. We can set up a beautiful landing page, contact forms, and lead collection workflows for {{name}} in just a few days.
 
 Would you be open to a quick, complimentary discussion about how we can establish your online presence?`
   },
@@ -27,7 +27,7 @@ Would you be open to a quick, complimentary discussion about how we can establis
     defaultSubject: "Proposal: Enhancing your business website - Khanani Innovations",
     defaultBody: `I was recently looking at your website and noticed some great opportunities to enhance its speed, visual design, and user experience to help drive more leads and conversions.
 
-At Khanani Innovations, we specialize in building modern, high-performance web applications that not only look premium but are fully optimized to turn visitors into paying customers. 
+At Khanani Innovations (https://khananiinnovations.com), we specialize in building modern, high-performance web applications that not only look premium but are fully optimized to turn visitors into paying customers. 
 
 We would love to do a quick, complimentary audit of your site and share some concrete ideas on how we can take it to the next level. Let me know if you have 10 minutes to connect this week.`
   },
@@ -36,7 +36,7 @@ We would love to do a quick, complimentary audit of your site and share some con
     name: "Lead Generation Solution",
     description: "Offer to build a modern lead generation and email workflow app.",
     defaultSubject: "Automate your lead generation & client outreach - Khanani Innovations",
-    defaultBody: `Many businesses lose potential leads due to slow follow-ups or lack of automated outreach. We help companies solve this by building custom, minimal, and premium lead management dashboards (like the ones we use internally).
+    defaultBody: `Many businesses lose potential leads due to slow follow-ups or lack of automated outreach. We help companies solve this by building custom, minimal, and premium lead management dashboards at Khanani Innovations (https://khananiinnovations.com).
 
 We can build a tailored application for your team that integrates directly with APIs like Resend, Twilio, and Stripe to automate your entire workflow.
 
@@ -47,7 +47,7 @@ Would you be open to a brief call to see a demo of our custom solutions?`
     name: "General Digital Partnership",
     description: "General introduction to Khanani Innovations' digital development services.",
     defaultSubject: "Collaboration Opportunity with Khanani Innovations",
-    defaultBody: `I'm reaching out from Khanani Innovations. We partner with businesses to design, develop, and scale state-of-the-art web applications, custom CRM platforms, and automated workflow systems.
+    defaultBody: `I'm reaching out from Khanani Innovations (https://khananiinnovations.com). We partner with businesses to design, develop, and scale state-of-the-art web applications, custom CRM platforms, and automated workflow systems.
 
 Our focus is on premium aesthetics, top-tier performance, and highly intuitive user interfaces that set your business apart from competitors.
 
@@ -149,10 +149,10 @@ export function generateEmailHtml(subject: string, bodyText: string, hasLogo = f
             ${formattedBody}
             <div class="divider"></div>
             <p style="margin: 0; font-size: 14px; font-weight: 600; color: #111827;">Best regards,</p>
-            <p style="margin: 4px 0 0 0; font-size: 14px; color: #4b5563;">Khanani Innovations Team</p>
+            <p style="margin: 4px 0 0 0; font-size: 14px; color: #4b5563;"><a href="https://khananiinnovations.com" target="_blank" style="color: #4b5563; text-decoration: none;">Khanani Innovations Team</a></p>
           </div>
           <div class="footer">
-            <p style="margin: 0 0 8px 0;">&copy; ${new Date().getFullYear()} Khanani Innovations. All rights reserved.</p>
+            <p style="margin: 0 0 8px 0;">&copy; ${new Date().getFullYear()} <a href="https://khananiinnovations.com" target="_blank" style="color: #3b82f6; text-decoration: none;">Khanani Innovations</a>. All rights reserved.</p>
             <p style="margin: 0;">You are receiving this email as business outreach. If you prefer not to receive further emails, please reply with "Unsubscribe".</p>
           </div>
         </div>

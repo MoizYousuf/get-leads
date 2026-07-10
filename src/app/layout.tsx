@@ -33,7 +33,7 @@ export default function RootLayout({
         </main>
 
         <footer className="border-t border-slate-900 bg-slate-950 py-6 text-center text-xs text-slate-500">
-          &copy; {new Date().getFullYear()} Khanani Innovations. Powered by Resend.
+          &copy; {new Date().getFullYear()} Khanani Innovations. All rights reserved.
         </footer>
       </body>
     </html>

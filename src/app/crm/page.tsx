@@ -33,6 +33,16 @@ import {
   List,
   LayoutGrid
 } from "lucide-react";
+ 
+const getInitials = (name?: string | null) => {
+  if (!name) return "";
+  return name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .substring(0, 2)
+    .toUpperCase();
+};
 
 interface Lead {
   id: string;
@@ -89,6 +99,7 @@ export default function CRMDashboard() {
   const [errorMsg, setErrorMsg] = useState("");
   const [isNotConfigured, setIsNotConfigured] = useState(false);
   const [viewMode, setViewMode] = useState<"list" | "board">("list");
+  const [draggedOverColumn, setDraggedOverColumn] = useState<string | null>(null);
 
   // Search & Filter state
   const [searchQuery, setSearchQuery] = useState("");
@@ -943,16 +954,42 @@ export default function CRMDashboard() {
       </div>
       ) : (
         /* Kanban Board View */
-        <div className="flex gap-4.5 overflow-x-auto pb-6 pt-1 select-none scrollbar-thin scrollbar-thumb-slate-800">
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3 }}
+          className="flex gap-4.5 overflow-x-auto pb-6 pt-1 select-none scrollbar-thin scrollbar-thumb-slate-800"
+        >
           {CRM_STATUSES.map((columnStatus) => {
             const columnLeads = leads.filter((l) => l.status === columnStatus);
             
             return (
               <div
                 key={columnStatus}
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={(e) => handleDrop(e, columnStatus)}
-                className="w-72 shrink-0 bg-slate-900/20 border border-slate-900/60 rounded-2xl p-4 flex flex-col min-h-[500px]"
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  if (draggedOverColumn !== columnStatus) {
+                    setDraggedOverColumn(columnStatus);
+                  }
+                }}
+                onDragLeave={() => {
+                  setDraggedOverColumn(null);
+                }}
+                onDrop={(e) => {
+                  handleDrop(e, columnStatus);
+                  setDraggedOverColumn(null);
+                }}
+                className={`w-72 shrink-0 bg-slate-900/10 border rounded-2xl p-4 flex flex-col min-h-[520px] transition-all duration-300 ${
+                  draggedOverColumn === columnStatus
+                    ? "bg-indigo-500/[0.03] border-indigo-500/40 border-dashed scale-[1.02] shadow-[0_10px_25px_rgba(99,102,241,0.1)]"
+                    : columnStatus === "Won"
+                    ? "border-emerald-500/10 shadow-[0_0_15px_rgba(16,185,129,0.03)]"
+                    : columnStatus === "Lost"
+                    ? "border-rose-500/10 shadow-[0_0_15px_rgba(244,63,94,0.03)]"
+                    : columnStatus === "Contacted" || columnStatus === "Email Opened"
+                    ? "border-sky-500/10 shadow-[0_0_15px_rgba(14,165,233,0.03)]"
+                    : "border-slate-900/80 shadow-[0_0_15px_rgba(99,102,241,0.02)]"
+                }`}
               >
                 {/* Column Header */}
                 <div className="flex items-center justify-between mb-4.5">
@@ -968,92 +1005,128 @@ export default function CRMDashboard() {
                         ? "bg-amber-450" 
                         : "bg-indigo-455"
                     }`} />
-                    <h3 className="text-xs font-bold text-slate-100 uppercase tracking-wider">
+                    <h3 className="text-xs font-bold text-slate-105 uppercase tracking-wider">
                       {columnStatus}
                     </h3>
                   </div>
-                  <span className="text-[10px] font-black bg-slate-900/65 border border-slate-850 px-2 py-0.5 rounded-full text-slate-400">
+                  <span className="text-[10px] font-black bg-slate-900/70 border border-slate-850 px-2 py-0.5 rounded-full text-slate-400">
                     {columnLeads.length}
                   </span>
                 </div>
 
                 {/* Column Cards List */}
-                <div className="flex-1 space-y-3 overflow-y-auto scrollbar-none pr-1">
-                  {columnLeads.length === 0 ? (
-                    <div className="h-full min-h-[150px] border border-dashed border-slate-900 rounded-xl flex items-center justify-center text-[10px] text-slate-550 italic">
-                      Drag leads here
-                    </div>
-                  ) : (
-                    columnLeads.map((lead) => (
-                      <div
-                        key={lead.id}
-                        draggable
-                        onDragStart={(e) => handleDragStart(e, lead.id)}
-                        className="bg-slate-950/80 border border-slate-850/80 hover:border-slate-800 rounded-xl p-3.5 shadow-lg space-y-3 cursor-grab active:cursor-grabbing transition hover:shadow-2xl"
+                <div 
+                  onDragOver={(e) => e.preventDefault()}
+                  className="flex-1 space-y-3 overflow-y-auto scrollbar-none pr-1 min-h-[400px]"
+                >
+                  <AnimatePresence mode="popLayout">
+                    {columnLeads.length === 0 ? (
+                      <div 
+                        onDragOver={(e) => e.preventDefault()}
+                        className="h-full min-h-[150px] border border-dashed border-slate-900 rounded-xl flex items-center justify-center text-[10px] text-slate-550 italic"
                       >
-                        <div className="space-y-1">
-                          <Link
-                            href={`/crm/${lead.id}`}
-                            className="text-xs font-bold text-slate-100 hover:text-indigo-400 transition block leading-snug"
-                          >
-                            {lead.name}
-                          </Link>
-                          {lead.owner && (
-                            <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">
-                              Owner: {lead.owner}
-                            </p>
-                          )}
-                        </div>
-
-                        {/* Middle Info */}
-                        <div className="space-y-1">
-                          <p className="text-[10px] text-slate-405 font-semibold truncate">
-                            {lead.industry}
-                          </p>
-                          <p className="text-[9px] text-slate-500 font-medium">
-                            {lead.city}
-                          </p>
-                        </div>
-
-                        {/* Task badges */}
-                        {((lead.pending_tasks_count || 0) > 0 || (lead.overdue_tasks_count || 0) > 0) && (
-                          <div className="flex flex-wrap gap-1.5 pt-1">
-                            {(lead.overdue_tasks_count || 0) > 0 && (
-                              <span className="text-[8px] font-black uppercase tracking-wider bg-rose-500/10 text-rose-405 border border-rose-500/20 px-2 py-0.5 rounded-full flex items-center gap-1 animate-pulse">
-                                <AlertCircle className="w-2.5 h-2.5 text-rose-400" />
-                                Overdue
-                              </span>
-                            )}
-                            {(lead.pending_tasks_count || 0) > 0 && (
-                              <span className="text-[8px] font-black uppercase tracking-wider bg-sky-500/10 text-sky-405 border border-sky-500/20 px-2 py-0.5 rounded-full flex items-center gap-1">
-                                <CheckSquare className="w-2.5 h-2.5 text-sky-400" />
-                                {lead.pending_tasks_count} Task(s)
-                              </span>
-                            )}
-                          </div>
-                        )}
-
-                        {/* Tags */}
-                        {lead.tags && lead.tags.length > 0 && (
-                          <div className="flex flex-wrap gap-1 pt-1 border-t border-slate-900/60">
-                            {lead.tags.slice(0, 3).map((tag: string) => (
-                              <span
-                                key={tag}
-                                className="text-[8px] font-bold bg-slate-900 border border-slate-850 px-1.5 py-0.5 rounded text-slate-450 uppercase tracking-wider"
-                              >
-                                {tag}
-                              </span>
-                            ))}
-                          </div>
-                        )}
+                        Drag leads here
                       </div>
-                    ))
-                  )}
+                    ) : (
+                      columnLeads.map((lead) => (
+                        <motion.div
+                          layout
+                          key={lead.id}
+                          draggable
+                          onDragStart={(e: any) => handleDragStart(e, lead.id)}
+                          onDragOver={(e) => e.preventDefault()}
+                          whileHover={{ 
+                            y: -4, 
+                            scale: 1.015,
+                            borderColor: "rgba(99, 102, 241, 0.25)",
+                            boxShadow: "0 10px 25px rgba(0,0,0,0.35)" 
+                          }}
+                          whileTap={{ scale: 0.985 }}
+                          transition={{ type: "spring", stiffness: 350, damping: 28 }}
+                          className="bg-slate-950/70 border border-slate-850/80 rounded-xl p-3.5 shadow-lg space-y-3.5 cursor-grab active:cursor-grabbing transition-colors relative overflow-hidden pl-4"
+                        >
+                          {/* Side indicator stripe */}
+                          <div className={`absolute left-0 top-0 bottom-0 w-[3px] ${
+                            columnStatus === "Won"
+                              ? "bg-emerald-500"
+                              : columnStatus === "Lost"
+                              ? "bg-rose-500"
+                              : columnStatus === "New"
+                              ? "bg-slate-500"
+                              : columnStatus === "Contacted" || columnStatus === "Email Opened"
+                              ? "bg-amber-500"
+                              : "bg-indigo-500"
+                          }`} />
+
+                          <div className="space-y-1">
+                            <Link
+                              href={`/crm/${lead.id}`}
+                              className="text-xs font-bold text-slate-100 hover:text-indigo-400 transition block leading-snug"
+                            >
+                              {lead.name}
+                            </Link>
+                            {lead.owner && (
+                              <div className="flex items-center gap-1.5 mt-1">
+                                <div className="w-4 h-4 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-[7px] font-black text-indigo-405 flex items-center justify-center select-none">
+                                  {getInitials(lead.owner)}
+                                </div>
+                                <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest leading-none">
+                                  {lead.owner}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Middle Info */}
+                          <div className="space-y-0.5">
+                            <p className="text-[10px] text-slate-400 font-semibold truncate leading-none">
+                              {lead.industry}
+                            </p>
+                            <p className="text-[9px] text-slate-500 font-medium leading-none">
+                              {lead.city}
+                            </p>
+                          </div>
+
+                          {/* Task badges */}
+                          {((lead.pending_tasks_count || 0) > 0 || (lead.overdue_tasks_count || 0) > 0) && (
+                            <div className="flex flex-wrap gap-1.5 pt-1">
+                              {(lead.overdue_tasks_count || 0) > 0 && (
+                                <span className="text-[8px] font-black uppercase tracking-wider bg-rose-500/10 text-rose-405 border border-rose-500/20 px-2 py-0.5 rounded-full flex items-center gap-1 animate-pulse">
+                                  <AlertCircle className="w-2.5 h-2.5 text-rose-405" />
+                                  Overdue
+                                </span>
+                              )}
+                              {(lead.pending_tasks_count || 0) > 0 && (
+                                <span className="text-[8px] font-black uppercase tracking-wider bg-sky-500/10 text-sky-405 border border-sky-500/20 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                  <CheckSquare className="w-2.5 h-2.5 text-sky-400" />
+                                  {lead.pending_tasks_count} Task(s)
+                                </span>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Tags */}
+                          {lead.tags && lead.tags.length > 0 && (
+                            <div className="flex flex-wrap gap-1 pt-1.5 border-t border-slate-900/60">
+                              {lead.tags.slice(0, 3).map((tag: string) => (
+                                <span
+                                  key={tag}
+                                  className="text-[8px] font-bold bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 rounded-full text-indigo-400 uppercase tracking-wider"
+                                >
+                                  {tag}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </motion.div>
+                      ))
+                    )}
+                  </AnimatePresence>
                 </div>
               </div>
             );
           })}
-        </div>
+        </motion.div>
       )}
 
       {/* Manual Add Lead Modal */}

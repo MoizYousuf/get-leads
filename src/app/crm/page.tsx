@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useToast } from "@/components/ui/Toast";
@@ -31,7 +31,8 @@ import {
   TrendingUp,
   AlertCircle,
   List,
-  LayoutGrid
+  LayoutGrid,
+  Briefcase
 } from "lucide-react";
  
 const getInitials = (name?: string | null) => {
@@ -100,6 +101,14 @@ export default function CRMDashboard() {
   const [isNotConfigured, setIsNotConfigured] = useState(false);
   const [viewMode, setViewMode] = useState<"list" | "board">("list");
   const [draggedOverColumn, setDraggedOverColumn] = useState<string | null>(null);
+  const [draggedOverLeadId, setDraggedOverLeadId] = useState<string | null>(null);
+
+  const [dbIndustries, setDbIndustries] = useState<string[]>([]);
+  const [dbCities, setDbCities] = useState<string[]>([]);
+  const [dbTags, setDbTags] = useState<string[]>([]);
+
+  const boardRef = useRef<HTMLDivElement>(null);
+  const scrollIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Search & Filter state
   const [searchQuery, setSearchQuery] = useState("");
@@ -179,6 +188,24 @@ export default function CRMDashboard() {
     }
   };
 
+  const loadFilterOptions = async () => {
+    try {
+      const res = await fetch("/api/crm/leads/filter-options");
+      const data = await res.json();
+      if (data.success) {
+        setDbIndustries(data.data.industries || []);
+        setDbCities(data.data.cities || []);
+        setDbTags(data.data.tags || []);
+      }
+    } catch (err) {
+      console.error("Error loading filter options:", err);
+    }
+  };
+
+  useEffect(() => {
+    loadFilterOptions();
+  }, []);
+
   useEffect(() => {
     fetchLeads();
   }, [page, statusFilter, websiteFilter, sortBy, sortOrder, viewMode]);
@@ -202,58 +229,125 @@ export default function CRMDashboard() {
     setTimeout(() => fetchLeads(), 0);
   };
 
+  // Drag-to-scroll handlers for horizontal scrollable board
+  const handleBoardDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    const board = boardRef.current;
+    if (!board) return;
+
+    const rect = board.getBoundingClientRect();
+    const x = e.clientX - rect.left; // cursor position relative to board
+    const width = rect.width;
+    const threshold = 120; // Scroll zone boundary width (120px from left/right edges)
+
+    // Clear any active scrolling interval first
+    if (scrollIntervalRef.current) {
+      clearInterval(scrollIntervalRef.current);
+      scrollIntervalRef.current = null;
+    }
+
+    if (x > width - threshold) {
+      // Near right boundary, scroll right
+      const speed = Math.min(18, (x - (width - threshold)) / 3);
+      scrollIntervalRef.current = setInterval(() => {
+        if (board) board.scrollLeft += speed;
+      }, 16);
+    } else if (x < threshold) {
+      // Near left boundary, scroll left
+      const speed = Math.min(18, (threshold - x) / 3);
+      scrollIntervalRef.current = setInterval(() => {
+        if (board) board.scrollLeft -= speed;
+      }, 16);
+    }
+  };
+
+  const handleBoardDragEnd = () => {
+    if (scrollIntervalRef.current) {
+      clearInterval(scrollIntervalRef.current);
+      scrollIntervalRef.current = null;
+    }
+  };
+
   // Drag and Drop handlers for Kanban Board
   const handleDragStart = (e: React.DragEvent, leadId: string) => {
     e.dataTransfer.setData("text/plain", leadId);
     e.dataTransfer.effectAllowed = "move";
   };
 
-  const handleDrop = async (e: React.DragEvent, targetStatus: string) => {
+  const handleDrop = async (e: React.DragEvent, targetStatus: string, targetLeadId?: string) => {
     e.preventDefault();
     const leadId = e.dataTransfer.getData("text/plain");
     if (!leadId) return;
 
     // Find the lead to check if it's changing status
     const targetLead = leads.find(l => l.id === leadId);
-    if (!targetLead || targetLead.status === targetStatus) return;
+    if (!targetLead) return;
 
-    // Optimistically update the status locally to avoid lag
-    setLeads(prevLeads =>
-      prevLeads.map(l => (l.id === leadId ? { ...l, status: targetStatus } : l))
-    );
+    // Save previous state for rollback
+    const previousLeads = [...leads];
+
+    // Optimistically update status and positions locally
+    setLeads(prevLeads => {
+      // 1. Remove from list
+      let list = prevLeads.filter(l => l.id !== leadId);
+      // 2. Modify lead status
+      const updatedLead = { ...targetLead, status: targetStatus };
+
+      // 3. Insert at target position
+      if (targetLeadId) {
+        const targetIndex = list.findIndex(l => l.id === targetLeadId);
+        if (targetIndex !== -1) {
+          // Drop on top of target lead: insert before target
+          list.splice(targetIndex, 0, updatedLead);
+        } else {
+          list.push(updatedLead);
+        }
+      } else {
+        // Drop on background column: append to the bottom of target status
+        let lastIndex = -1;
+        for (let i = list.length - 1; i >= 0; i--) {
+          if (list[i].status === targetStatus) {
+            lastIndex = i;
+            break;
+          }
+        }
+        if (lastIndex !== -1) {
+          list.splice(lastIndex + 1, 0, updatedLead);
+        } else {
+          list.push(updatedLead);
+        }
+      }
+      return list;
+    });
 
     try {
-      const res = await fetch(`/api/crm/leads/${leadId}`, {
+      const res = await fetch("/api/crm/leads/reorder", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: targetStatus })
+        body: JSON.stringify({ leadId, targetStatus, targetLeadId })
       });
       const data = await res.json();
       if (data.success) {
         toast({
           title: "Pipeline Updated",
-          message: `Moved "${targetLead.name}" to "${targetStatus}".`,
+          message: `Position updated successfully.`,
           type: "success"
         });
         // Fetch fresh logs/activities in background to update counters
         fetchLeads();
       } else {
-        // Revert optimistically changed status on error
-        setLeads(prevLeads =>
-          prevLeads.map(l => (l.id === leadId ? { ...l, status: targetLead.status } : l))
-        );
+        // Revert on error
+        setLeads(previousLeads);
         toast({
           title: "Update Failed",
-          message: data.error || "Failed to update lead status",
+          message: data.error || "Failed to update lead position",
           type: "error"
         });
       }
     } catch (err: any) {
       console.error(err);
       // Revert status
-      setLeads(prevLeads =>
-        prevLeads.map(l => (l.id === leadId ? { ...l, status: targetLead.status } : l))
-      );
+      setLeads(previousLeads);
       toast({
         title: "Update Error",
         message: err.message || "Failed to update lead status",
@@ -293,6 +387,7 @@ export default function CRMDashboard() {
         setSelectedIds([]);
         setShowBulkMenu(false);
         fetchLeads();
+        loadFilterOptions();
         toast({
           title: "Status Updated",
           message: `Successfully updated status to '${status}' for ${selectedIds.length} lead(s).`,
@@ -332,6 +427,7 @@ export default function CRMDashboard() {
         setSelectedIds([]);
         setShowBulkMenu(false);
         fetchLeads();
+        loadFilterOptions();
         toast({
           title: "Leads Deleted",
           message: `Successfully deleted leads from pipeline.`,
@@ -409,6 +505,7 @@ export default function CRMDashboard() {
           tagsString: ""
         });
         fetchLeads();
+        loadFilterOptions();
         toast({
           title: "Lead Created",
           message: `Successfully created lead '${payload.name}'.`,
@@ -434,7 +531,48 @@ export default function CRMDashboard() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 relative overflow-hidden min-h-screen">
+      {/* Premium Ambient Background Glows */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
+        <motion.div
+          animate={{
+            x: [0, 40, 0],
+            y: [0, -30, 0],
+          }}
+          transition={{
+            duration: 15,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+          className="absolute -top-32 -left-32 w-96 h-96 rounded-full bg-indigo-500/10 blur-[110px]"
+        />
+        <motion.div
+          animate={{
+            x: [0, -50, 0],
+            y: [0, 40, 0],
+          }}
+          transition={{
+            duration: 18,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+          className="absolute top-[30%] -right-32 w-[450px] h-[450px] rounded-full bg-violet-600/8 blur-[130px]"
+        />
+        <motion.div
+          animate={{
+            x: [0, 30, 0],
+            y: [0, 20, 0],
+          }}
+          transition={{
+            duration: 12,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+          className="absolute -bottom-32 left-[20%] w-[380px] h-[380px] rounded-full bg-sky-500/8 blur-[100px]"
+        />
+      </div>
+
+      <div className="relative z-10 space-y-6">
       {/* Configuration Error Banner */}
       {isNotConfigured && (
         <div className="bg-rose-500/10 border border-rose-500/20 text-rose-200 rounded-xl p-5 flex gap-4 items-start shadow-xl">
@@ -499,138 +637,153 @@ export default function CRMDashboard() {
 
           <Link
             href="/leads"
-            className="px-4 py-2 border border-slate-800 hover:border-slate-700 bg-slate-900/40 text-xs font-bold text-slate-300 hover:text-slate-100 rounded-xl transition duration-300 flex items-center gap-2 cursor-pointer shadow-lg"
+            className="px-4 py-2 border border-slate-800 hover:border-slate-700 hover:bg-slate-900/60 text-xs font-bold text-slate-350 hover:text-slate-100 rounded-xl transition duration-300 flex items-center gap-2 cursor-pointer shadow-lg"
           >
             <Search className="w-3.5 h-3.5 text-sky-400" />
             Find New Leads
           </Link>
-          <button
+          <motion.button
             onClick={() => setShowAddModal(true)}
-            className="px-4 py-2 bg-gradient-to-r from-sky-500 to-indigo-500 hover:from-sky-400 hover:to-indigo-400 text-xs font-bold text-slate-950 hover:scale-[1.02] active:scale-[0.98] rounded-xl transition duration-300 flex items-center gap-1.5 cursor-pointer shadow-lg"
+            whileHover={{ 
+              scale: 1.03, 
+              y: -1,
+              boxShadow: "0 0 20px rgba(99, 102, 241, 0.4)",
+            }}
+            whileTap={{ scale: 0.97 }}
+            className="group px-4 py-2 bg-gradient-to-r from-indigo-600 via-indigo-550 to-indigo-600 hover:from-indigo-500 hover:to-indigo-550 text-xs font-bold text-slate-50 hover:text-white rounded-xl transition-all duration-200 flex items-center gap-1.5 cursor-pointer shadow-[0_4px_14px_rgba(99,102,241,0.2)] border border-indigo-500/30"
           >
-            <Plus className="w-4 h-4 text-slate-950 stroke-[3px]" />
+            <Plus className="w-4 h-4 text-slate-100 stroke-[3px] group-hover:rotate-90 transition-transform duration-300" />
             Add Lead
-          </button>
+          </motion.button>
         </div>
       </div>
 
       {/* Filter and Search Bar Console */}
-      <form onSubmit={handleApplyFilters} className="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-5 shadow-2xl backdrop-blur-md space-y-4 hover:border-slate-800 transition-all duration-300">
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+      <form onSubmit={handleApplyFilters} className="bg-slate-900/10 border border-slate-900/60 rounded-2xl p-5 shadow-2xl backdrop-blur-md space-y-4 hover:border-slate-850/40 transition-all duration-350">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3.5">
           {/* Text search */}
-          <div className="md:col-span-4 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+          <div className="lg:col-span-4 relative group">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-indigo-400 transition-colors duration-200" />
             <input
               type="text"
               placeholder="Search leads, cities, emails..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 bg-slate-950/80 border border-slate-850 hover:border-slate-800 focus:border-indigo-500 rounded-xl text-xs text-slate-200 focus:outline-none transition duration-300"
+              className="w-full pl-10 pr-4 py-2.5 bg-slate-950/40 border border-slate-850/60 hover:border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-xl text-xs text-slate-200 focus:outline-none transition duration-200 shadow-inner placeholder:text-slate-650"
             />
           </div>
 
           {/* Industry filter */}
-          <div className="md:col-span-2">
-            <input
-              type="text"
+          <div className="lg:col-span-2 relative group">
+            <SearchableDropdown
               placeholder="Industry / Niche"
               value={industryFilter}
-              onChange={(e) => setIndustryFilter(e.target.value)}
-              className="w-full px-3.5 py-2 bg-slate-950/80 border border-slate-850 hover:border-slate-800 focus:border-indigo-500 rounded-xl text-xs text-slate-200 focus:outline-none transition duration-300"
+              onChange={(val) => setIndustryFilter(val)}
+              options={dbIndustries}
+              icon={<Briefcase className="w-4 h-4" />}
             />
           </div>
 
           {/* City filter */}
-          <div className="md:col-span-2">
-            <input
-              type="text"
+          <div className="lg:col-span-2 relative group">
+            <SearchableDropdown
               placeholder="City"
               value={cityFilter}
-              onChange={(e) => setCityFilter(e.target.value)}
-              className="w-full px-3.5 py-2 bg-slate-950/80 border border-slate-850 hover:border-slate-800 focus:border-indigo-500 rounded-xl text-xs text-slate-200 focus:outline-none transition duration-300"
+              onChange={(val) => setCityFilter(val)}
+              options={dbCities}
+              icon={<MapPin className="w-4 h-4" />}
             />
           </div>
 
           {/* Tag filter */}
-          <div className="md:col-span-2">
-            <input
-              type="text"
+          <div className="lg:col-span-2 relative group">
+            <SearchableDropdown
               placeholder="Tag (e.g. cold)"
               value={tagFilter}
-              onChange={(e) => setTagFilter(e.target.value)}
-              className="w-full px-3.5 py-2 bg-slate-950/80 border border-slate-850 hover:border-slate-800 focus:border-indigo-500 rounded-xl text-xs text-slate-200 focus:outline-none transition duration-300"
+              onChange={(val) => setTagFilter(val)}
+              options={dbTags}
+              icon={<Tag className="w-4 h-4" />}
             />
           </div>
 
           {/* Buttons */}
-          <div className="md:col-span-2 flex gap-2">
+          <div className="lg:col-span-2 flex gap-2">
             <button
               type="submit"
-              className="flex-1 py-2 bg-slate-800/80 hover:bg-slate-700/80 border border-slate-750 text-xs font-bold text-slate-200 rounded-xl transition duration-300 flex items-center justify-center gap-1.5 cursor-pointer"
+              className="flex-1 py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 hover:scale-[1.02] active:scale-[0.98] text-slate-100 shadow-[0_4px_12px_rgba(99,102,241,0.15)] text-xs font-bold rounded-xl transition duration-250 flex items-center justify-center gap-1.5 cursor-pointer border border-indigo-500/20"
             >
-              <Filter className="w-3.5 h-3.5 text-sky-400" />
+              <Filter className="w-3.5 h-3.5 text-slate-100" />
               Filter
             </button>
             <button
               type="button"
               onClick={handleResetFilters}
-              className="px-3 py-2 bg-transparent hover:bg-slate-900 border border-transparent hover:border-slate-800 text-xs text-slate-400 hover:text-slate-200 rounded-xl transition duration-300 flex items-center justify-center cursor-pointer"
+              className="p-2.5 bg-slate-950/40 hover:bg-slate-900/40 border border-slate-850/60 hover:border-slate-800 text-slate-400 hover:text-slate-200 rounded-xl transition duration-200 flex items-center justify-center cursor-pointer shadow-lg"
               title="Reset Filters"
             >
-              <RefreshCw className="w-3.5 h-3.5" />
+              <RefreshCw className="w-3.5 h-3.5 text-slate-400" />
             </button>
           </div>
         </div>
 
         {/* Quick select filters */}
-        <div className="flex flex-wrap items-center justify-between border-t border-slate-900 pt-3 gap-3">
-          <div className="flex flex-wrap gap-2 items-center text-[11px] text-slate-400">
-            <span className="font-semibold text-slate-500">Quick Filters:</span>
+        <div className="flex flex-wrap items-center justify-between border-t border-slate-900/60 pt-3.5 gap-3">
+          <div className="flex flex-wrap gap-2.5 items-center text-[11px] text-slate-405">
+            <span className="font-bold text-[10px] text-indigo-400 uppercase tracking-widest mr-1">Quick Filters:</span>
             
             {/* Status Select */}
-            <select
-              value={statusFilter}
-              onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
-              className="bg-slate-950 border border-slate-850 text-[11px] rounded-lg px-2.5 py-1 text-slate-300 focus:outline-none focus:border-indigo-500 transition duration-300"
-            >
-              <option value="">All Statuses</option>
-              {CRM_STATUSES.map(status => (
-                <option key={status} value={status}>{status}</option>
-              ))}
-            </select>
+            <div className="relative flex items-center">
+              <select
+                value={statusFilter}
+                onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
+                className="appearance-none bg-slate-950/40 border border-slate-850/60 hover:border-slate-800 focus:border-indigo-500 text-[11px] rounded-xl px-3.5 pr-8 py-1.5 text-slate-350 focus:outline-none transition cursor-pointer select-none"
+              >
+                <option value="">All Statuses</option>
+                {CRM_STATUSES.map(status => (
+                  <option key={status} value={status}>{status}</option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-2.5 w-3.5 h-3.5 text-slate-500 pointer-events-none" />
+            </div>
 
             {/* Website Select */}
-            <select
-              value={websiteFilter}
-              onChange={(e) => { setWebsiteFilter(e.target.value); setPage(1); }}
-              className="bg-slate-950 border border-slate-850 text-[11px] rounded-lg px-2.5 py-1 text-slate-300 focus:outline-none focus:border-indigo-500 transition duration-300"
-            >
-              <option value="all">Websites: All</option>
-              <option value="with-website">Has Website</option>
-              <option value="without-website">No Website</option>
-            </select>
+            <div className="relative flex items-center">
+              <select
+                value={websiteFilter}
+                onChange={(e) => { setWebsiteFilter(e.target.value); setPage(1); }}
+                className="appearance-none bg-slate-950/40 border border-slate-850/60 hover:border-slate-800 focus:border-indigo-500 text-[11px] rounded-xl px-3.5 pr-8 py-1.5 text-slate-350 focus:outline-none transition cursor-pointer select-none"
+              >
+                <option value="all">Websites: All</option>
+                <option value="with-website">Has Website</option>
+                <option value="without-website">No Website</option>
+              </select>
+              <ChevronDown className="absolute right-2.5 w-3.5 h-3.5 text-slate-500 pointer-events-none" />
+            </div>
 
             {/* Sort Select */}
-            <select
-              value={sortBy}
-              onChange={(e) => { setSortBy(e.target.value); setPage(1); }}
-              className="bg-slate-950 border border-slate-850 text-[11px] rounded-lg px-2.5 py-1 text-slate-300 focus:outline-none focus:border-indigo-500 transition duration-300"
-            >
-              <option value="created_at">Date Added</option>
-              <option value="name">Company Name</option>
-              <option value="status">CRM Status</option>
-            </select>
+            <div className="relative flex items-center">
+              <select
+                value={sortBy}
+                onChange={(e) => { setSortBy(e.target.value); setPage(1); }}
+                className="appearance-none bg-slate-950/40 border border-slate-850/60 hover:border-slate-800 focus:border-indigo-500 text-[11px] rounded-xl px-3.5 pr-8 py-1.5 text-slate-350 focus:outline-none transition cursor-pointer select-none"
+              >
+                <option value="created_at">Date Added</option>
+                <option value="name">Company Name</option>
+                <option value="status">CRM Status</option>
+              </select>
+              <ChevronDown className="absolute right-2.5 w-3.5 h-3.5 text-slate-500 pointer-events-none" />
+            </div>
 
             <button
               type="button"
               onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
-              className="px-2.5 py-1 bg-slate-950 hover:bg-slate-900 border border-slate-850 rounded-lg text-slate-400 hover:text-slate-200 transition duration-300"
+              className="px-3.5 py-1.5 bg-slate-950/40 hover:bg-slate-900/40 border border-slate-850/60 rounded-xl text-slate-400 hover:text-slate-200 transition duration-300 text-[11px] font-bold uppercase cursor-pointer"
             >
-              {sortOrder.toUpperCase()}
+              {sortOrder}
             </button>
           </div>
 
-          <div className="text-[10px] font-bold text-slate-500 tracking-wider">
+          <div className="bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 px-3 py-1 rounded-full text-[10px] font-black tracking-wider shadow-sm select-none">
             {totalLeads} PROSPECTS FOUND
           </div>
         </div>
@@ -955,6 +1108,10 @@ export default function CRMDashboard() {
       ) : (
         /* Kanban Board View */
         <motion.div 
+          ref={boardRef}
+          onDragOver={handleBoardDragOver}
+          onDragLeave={handleBoardDragEnd}
+          onDrop={handleBoardDragEnd}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.3 }}
@@ -1017,7 +1174,7 @@ export default function CRMDashboard() {
                 {/* Column Cards List */}
                 <div 
                   onDragOver={(e) => e.preventDefault()}
-                  className="flex-1 space-y-3 overflow-y-auto scrollbar-none pr-1 min-h-[400px]"
+                  className="flex-1 space-y-3 overflow-y-auto scrollbar-none p-1.5 min-h-[400px]"
                 >
                   <AnimatePresence mode="popLayout">
                     {columnLeads.length === 0 ? (
@@ -1029,96 +1186,121 @@ export default function CRMDashboard() {
                       </div>
                     ) : (
                       columnLeads.map((lead) => (
-                        <motion.div
-                          layout
+                        <div
                           key={lead.id}
-                          draggable
-                          onDragStart={(e: any) => handleDragStart(e, lead.id)}
                           onDragOver={(e) => e.preventDefault()}
-                          whileHover={{ 
-                            y: -4, 
-                            scale: 1.015,
-                            borderColor: "rgba(99, 102, 241, 0.25)",
-                            boxShadow: "0 10px 25px rgba(0,0,0,0.35)" 
-                          }}
-                          whileTap={{ scale: 0.985 }}
-                          transition={{ type: "spring", stiffness: 350, damping: 28 }}
-                          className="bg-slate-950/70 border border-slate-850/80 rounded-xl p-3.5 shadow-lg space-y-3.5 cursor-grab active:cursor-grabbing transition-colors relative overflow-hidden pl-4"
+                          className="relative"
                         >
-                          {/* Side indicator stripe */}
-                          <div className={`absolute left-0 top-0 bottom-0 w-[3px] ${
-                            columnStatus === "Won"
-                              ? "bg-emerald-500"
-                              : columnStatus === "Lost"
-                              ? "bg-rose-500"
-                              : columnStatus === "New"
-                              ? "bg-slate-500"
-                              : columnStatus === "Contacted" || columnStatus === "Email Opened"
-                              ? "bg-amber-500"
-                              : "bg-indigo-500"
-                          }`} />
+                          {/* Glowing Drop Indicator Line (Jira/ClickUp style) */}
+                          {draggedOverLeadId === lead.id && (
+                            <motion.div 
+                              layoutId="drop-indicator"
+                              className="h-1 bg-gradient-to-r from-indigo-500 to-indigo-400 rounded-full w-full mb-2 shadow-[0_0_12px_rgba(99,102,241,0.6)]"
+                              initial={{ opacity: 0, scaleX: 0 }}
+                              animate={{ opacity: 1, scaleX: 1 }}
+                              exit={{ opacity: 0, scaleX: 0 }}
+                            />
+                          )}
 
-                          <div className="space-y-1">
-                            <Link
-                              href={`/crm/${lead.id}`}
-                              className="text-xs font-bold text-slate-100 hover:text-indigo-400 transition block leading-snug"
-                            >
-                              {lead.name}
-                            </Link>
-                            {lead.owner && (
-                              <div className="flex items-center gap-1.5 mt-1">
-                                <div className="w-4 h-4 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-[7px] font-black text-indigo-405 flex items-center justify-center select-none">
-                                  {getInitials(lead.owner)}
+                          <motion.div
+                            layout
+                            draggable
+                            onDragStart={(e: any) => handleDragStart(e, lead.id)}
+                            onDragEnd={handleBoardDragEnd}
+                            onDragEnter={() => setDraggedOverLeadId(lead.id)}
+                            onDragLeave={() => setDraggedOverLeadId(null)}
+                            onDragOver={(e) => e.preventDefault()}
+                            onDrop={(e) => {
+                              e.stopPropagation();
+                              handleDrop(e, columnStatus, lead.id);
+                              setDraggedOverLeadId(null);
+                            }}
+                            whileHover={{ 
+                              y: -4, 
+                              scale: 1.015,
+                              borderColor: "rgba(99, 102, 241, 0.35)",
+                              boxShadow: "0 12px 30px rgba(0,0,0,0.4)",
+                              zIndex: 10
+                            }}
+                            whileTap={{ scale: 0.985 }}
+                            transition={{ type: "spring", stiffness: 350, damping: 28 }}
+                            className="bg-slate-950/65 border border-slate-850/60 rounded-xl p-3.5 shadow-lg space-y-3.5 cursor-grab active:cursor-grabbing transition-colors relative overflow-hidden pl-4 backdrop-blur-sm hover:bg-slate-950/85"
+                          >
+                            {/* Side indicator stripe */}
+                            <div className={`absolute left-0 top-0 bottom-0 w-[3px] ${
+                              columnStatus === "Won"
+                                ? "bg-emerald-500"
+                                : columnStatus === "Lost"
+                                ? "bg-rose-500"
+                                : columnStatus === "New"
+                                ? "bg-slate-500"
+                                : columnStatus === "Contacted" || columnStatus === "Email Opened"
+                                ? "bg-amber-500"
+                                : "bg-indigo-500"
+                            }`} />
+
+                            <div className="space-y-1">
+                              <Link
+                                href={`/crm/${lead.id}`}
+                                className="text-xs font-bold text-slate-105 hover:text-indigo-405 transition block leading-snug"
+                              >
+                                {lead.name}
+                              </Link>
+                              {lead.owner && (
+                                <div className="flex items-center gap-1.5 mt-1">
+                                  <div className="w-4 h-4 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-[7px] font-black text-indigo-405 flex items-center justify-center select-none">
+                                    {getInitials(lead.owner)}
+                                  </div>
+                                  <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest leading-none">
+                                    {lead.owner}
+                                  </p>
                                 </div>
-                                <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest leading-none">
-                                  {lead.owner}
-                                </p>
+                              )}
+                            </div>
+
+                            {/* Middle Info */}
+                            <div className="space-y-0.5">
+                              <p className="text-[10px] text-slate-400 font-semibold truncate leading-none">
+                                {lead.industry}
+                              </p>
+                              <p className="text-[9px] text-slate-500 font-medium leading-none">
+                                {lead.city}
+                              </p>
+                            </div>
+
+                            {/* Task badges */}
+                            {((lead.pending_tasks_count || 0) > 0 || (lead.overdue_tasks_count || 0) > 0) && (
+                              <div className="flex flex-wrap gap-1.5 pt-1">
+                                {(lead.overdue_tasks_count || 0) > 0 && (
+                                  <span className="text-[8px] font-black uppercase tracking-wider bg-rose-500/10 text-rose-405 border border-rose-500/20 px-2 py-0.5 rounded-full flex items-center gap-1 animate-pulse">
+                                    <AlertCircle className="w-2.5 h-2.5 text-rose-455" />
+                                    Overdue
+                                  </span>
+                                )}
+                                {(lead.pending_tasks_count || 0) > 0 && (
+                                  <span className="text-[8px] font-black uppercase tracking-wider bg-sky-500/10 text-sky-405 border border-sky-500/20 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                    <CheckSquare className="w-2.5 h-2.5 text-sky-400" />
+                                    {lead.pending_tasks_count} Task(s)
+                                  </span>
+                                )}
                               </div>
                             )}
-                          </div>
 
-                          {/* Middle Info */}
-                          <div className="space-y-0.5">
-                            <p className="text-[10px] text-slate-400 font-semibold truncate leading-none">
-                              {lead.industry}
-                            </p>
-                            <p className="text-[9px] text-slate-500 font-medium leading-none">
-                              {lead.city}
-                            </p>
-                          </div>
-
-                          {/* Task badges */}
-                          {((lead.pending_tasks_count || 0) > 0 || (lead.overdue_tasks_count || 0) > 0) && (
-                            <div className="flex flex-wrap gap-1.5 pt-1">
-                              {(lead.overdue_tasks_count || 0) > 0 && (
-                                <span className="text-[8px] font-black uppercase tracking-wider bg-rose-500/10 text-rose-405 border border-rose-500/20 px-2 py-0.5 rounded-full flex items-center gap-1 animate-pulse">
-                                  <AlertCircle className="w-2.5 h-2.5 text-rose-405" />
-                                  Overdue
-                                </span>
-                              )}
-                              {(lead.pending_tasks_count || 0) > 0 && (
-                                <span className="text-[8px] font-black uppercase tracking-wider bg-sky-500/10 text-sky-405 border border-sky-500/20 px-2 py-0.5 rounded-full flex items-center gap-1">
-                                  <CheckSquare className="w-2.5 h-2.5 text-sky-400" />
-                                  {lead.pending_tasks_count} Task(s)
-                                </span>
-                              )}
-                            </div>
-                          )}
-
-                          {/* Tags */}
-                          {lead.tags && lead.tags.length > 0 && (
-                            <div className="flex flex-wrap gap-1 pt-1.5 border-t border-slate-900/60">
-                              {lead.tags.slice(0, 3).map((tag: string) => (
-                                <span
-                                  key={tag}
-                                  className="text-[8px] font-bold bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 rounded-full text-indigo-400 uppercase tracking-wider"
-                                >
-                                  {tag}
-                                </span>
-                              ))}
-                            </div>
-                          )}
-                        </motion.div>
+                            {/* Tags */}
+                            {lead.tags && lead.tags.length > 0 && (
+                              <div className="flex flex-wrap gap-1 pt-1.5 border-t border-slate-900/60">
+                                {lead.tags.slice(0, 3).map((tag: string) => (
+                                  <span
+                                    key={tag}
+                                    className="text-[8px] font-bold bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 rounded-full text-indigo-400 uppercase tracking-wider"
+                                  >
+                                    {tag}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </motion.div>
+                        </div>
                       ))
                     )}
                   </AnimatePresence>
@@ -1128,6 +1310,7 @@ export default function CRMDashboard() {
           })}
         </motion.div>
       )}
+      </div>
 
       {/* Manual Add Lead Modal */}
       {showAddModal && (
@@ -1304,5 +1487,115 @@ function XIcon(props: React.SVGProps<SVGSVGElement>) {
       <path d="M18 6 6 18" />
       <path d="m6 6 12 12" />
     </svg>
+  );
+}
+
+// Searchable Combobox Dropdown for CRM Filters
+interface SearchableDropdownProps {
+  placeholder: string;
+  value: string;
+  onChange: (val: string) => void;
+  options: string[];
+  icon: React.ReactNode;
+}
+
+function SearchableDropdown({ placeholder, value, onChange, options, icon }: SearchableDropdownProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Sync state with parent component value (e.g. when reset occurs)
+  useEffect(() => {
+    setSearch(value);
+  }, [value]);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+        // Reset query back to value if we did not choose an item
+        setSearch(value);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [value]);
+
+  // Filter list based on search string
+  const filtered = options.filter(opt => 
+    opt.toLowerCase().includes(search.toLowerCase())
+  );
+
+  return (
+    <div ref={containerRef} className="relative w-full">
+      <div className="relative group">
+        <div className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-indigo-400 transition-colors duration-200 pointer-events-none">
+          {icon}
+        </div>
+        <input
+          type="text"
+          placeholder={placeholder}
+          value={search}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setIsOpen(true);
+            if (!e.target.value) {
+              onChange("");
+            }
+          }}
+          onFocus={() => setIsOpen(true)}
+          className="w-full pl-10 pr-8 py-2.5 bg-slate-950/40 border border-slate-850/60 hover:border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-xl text-xs text-slate-200 focus:outline-none transition duration-200 shadow-inner placeholder:text-slate-650"
+        />
+        {/* Dropdown indicator */}
+        <ChevronDown 
+          onClick={() => setIsOpen(!isOpen)}
+          className={`absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 hover:text-slate-350 transition-transform duration-200 cursor-pointer ${
+            isOpen ? "rotate-180" : ""
+          }`} 
+        />
+      </div>
+
+      {/* Popover Options List */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -8, scale: 0.98 }}
+            animate={{ opacity: 1, y: 4, scale: 1 }}
+            exit={{ opacity: 0, y: -8, scale: 0.98 }}
+            transition={{ duration: 0.12 }}
+            className="absolute left-0 right-0 z-50 mt-1 max-h-52 overflow-y-auto bg-slate-900 border border-slate-800/80 rounded-xl shadow-2xl p-1 backdrop-blur-md scrollbar-thin scrollbar-thumb-slate-800"
+          >
+            {filtered.length === 0 ? (
+              <div className="py-2 px-3 text-xs text-slate-500 italic">
+                No matching options
+              </div>
+            ) : (
+              filtered.map((opt) => {
+                const isSelected = opt === value;
+                return (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => {
+                      onChange(opt);
+                      setSearch(opt);
+                      setIsOpen(false);
+                    }}
+                    className={`w-full text-left py-1.5 px-3 text-xs rounded-lg transition duration-150 flex items-center justify-between cursor-pointer ${
+                      isSelected 
+                        ? "bg-indigo-500/10 text-indigo-400 font-bold border border-indigo-500/20" 
+                        : "text-slate-300 hover:bg-slate-950/60 hover:text-slate-100"
+                    }`}
+                  >
+                    <span>{opt}</span>
+                    {isSelected && <CheckCircle className="w-3.5 h-3.5 text-indigo-400" />}
+                  </button>
+                );
+              })
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }

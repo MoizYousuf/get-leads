@@ -67,7 +67,13 @@ export async function GET(req: NextRequest) {
     }
 
     // Apply Sorting
-    dbQuery = dbQuery.order(sortBy, { ascending: sortOrder === "asc" });
+    if (sortBy === "created_at") {
+      dbQuery = dbQuery
+        .order("sort_order", { ascending: true })
+        .order("created_at", { ascending: false });
+    } else {
+      dbQuery = dbQuery.order(sortBy, { ascending: sortOrder === "asc" });
+    }
 
     // Apply Pagination
     dbQuery = dbQuery.range(offset, offset + limit - 1);

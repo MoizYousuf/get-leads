@@ -445,13 +445,13 @@ export default function InboxDashboard() {
                   {/* Email Content Body */}
                   <div className="flex-1 p-6 overflow-y-auto bg-slate-950/20 scrollbar-thin">
                     {selectedEmail.html ? (
-                      // In a production app, we would sanitize the HTML. Since this is local mockup rendering, we display with standard Tailwind prose style.
+                      // In a production app, we would sanitize the HTML. We display this inside a clean, light-mode background card for maximum readability (as HTML emails are styled for white backgrounds).
                       <div 
-                        className="email-html-body text-slate-300 text-sm leading-relaxed whitespace-pre-wrap font-sans"
+                        className="email-html-body text-slate-900 text-sm leading-relaxed font-sans bg-white p-6 rounded-xl border border-slate-200/80 shadow-md overflow-x-auto"
                         dangerouslySetInnerHTML={{ __html: selectedEmail.html }}
                       />
                     ) : (
-                      <div className="text-slate-300 text-sm leading-relaxed whitespace-pre-wrap font-sans">
+                      <div className="text-slate-300 text-sm leading-relaxed whitespace-pre-wrap font-sans bg-slate-950/40 p-5 rounded-xl border border-slate-850 shadow-inner">
                         {selectedEmail.text || "No email body present."}
                       </div>
                     )}

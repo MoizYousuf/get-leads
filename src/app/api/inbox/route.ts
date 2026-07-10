@@ -3,7 +3,7 @@ import { getInbox, deleteEmailFromInbox, clearInbox, addEmailToInbox } from "@/l
 
 export async function GET(req: NextRequest) {
   try {
-    const emails = getInbox();
+    const emails = await getInbox();
     return NextResponse.json({ success: true, data: emails });
   } catch (error: any) {
     return NextResponse.json({ error: error.message || "Failed to fetch inbox." }, { status: 500 });
@@ -17,7 +17,7 @@ export async function DELETE(req: NextRequest) {
     const all = searchParams.get("all");
 
     if (all === "true") {
-      clearInbox();
+      await clearInbox();
       return NextResponse.json({ success: true, message: "Inbox cleared successfully." });
     }
 
@@ -25,7 +25,7 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: "Missing email id parameter." }, { status: 400 });
     }
 
-    const success = deleteEmailFromInbox(id);
+    const success = await deleteEmailFromInbox(id);
     if (!success) {
       return NextResponse.json({ error: "Email not found." }, { status: 404 });
     }
@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { from, fromName, subject, text, html } = body;
 
-    const mockEmail = addEmailToInbox({
+    const mockEmail = await addEmailToInbox({
       from: from || "lead-reply@example.com",
       fromName: fromName || "Simulated Lead",
       to: ["sales@khanani-innovations.com"],

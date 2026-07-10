@@ -22,6 +22,10 @@ if (!globalInbox.__inboxStore) {
   globalInbox.__inboxStore = [];
 }
 
+const getWorkerUrl = () => {
+  return process.env.CLOUDFLARE_WORKER_URL || "";
+};
+
 const initStore = (): boolean => {
   try {
     if (!fs.existsSync(DATA_DIR)) {
@@ -32,12 +36,25 @@ const initStore = (): boolean => {
     }
     return true;
   } catch (error) {
-    console.warn("Failed to initialize file store (likely read-only environment like Vercel). Falling back to in-memory store.");
+    console.warn("Failed to initialize file store (likely read-only environment like Vercel).");
     return false;
   }
 };
 
-export const getInbox = (): InboundEmail[] => {
+export const getInbox = async (): Promise<InboundEmail[]> => {
+  const workerUrl = getWorkerUrl();
+  if (workerUrl) {
+    try {
+      const res = await fetch(`${workerUrl}/api/inbox`, { cache: "no-store" });
+      const json = await res.json();
+      if (json.success && Array.isArray(json.data)) {
+        return json.data;
+      }
+    } catch (e) {
+      console.error("Failed to fetch inbox from Cloudflare Worker KV:", e);
+    }
+  }
+
   if (initStore()) {
     try {
       const content = fs.readFileSync(INBOX_FILE, "utf-8");
@@ -59,17 +76,32 @@ export const getInbox = (): InboundEmail[] => {
   return globalInbox.__inboxStore || [];
 };
 
-export const addEmailToInbox = (email: Omit<InboundEmail, "id" | "date">): InboundEmail => {
+export const addEmailToInbox = async (email: Omit<InboundEmail, "id" | "date">): Promise<InboundEmail> => {
   const newEmail: InboundEmail = {
     ...email,
     id: `in_msg_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
     date: new Date().toISOString()
   };
 
+  const workerUrl = getWorkerUrl();
+  if (workerUrl) {
+    try {
+      const res = await fetch(`${workerUrl}/api/inbox`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newEmail)
+      });
+      const json = await res.json();
+      if (json.success) return newEmail;
+    } catch (e) {
+      console.error("Failed to write email to Cloudflare Worker KV:", e);
+    }
+  }
+
   const fileStoreAvailable = initStore();
   if (fileStoreAvailable) {
     try {
-      const emails = getInbox();
+      const emails = await getInbox();
       emails.unshift(newEmail);
       fs.writeFileSync(INBOX_FILE, JSON.stringify(emails, null, 2), "utf-8");
       return newEmail;
@@ -83,13 +115,26 @@ export const addEmailToInbox = (email: Omit<InboundEmail, "id" | "date">): Inbou
   return newEmail;
 };
 
-export const deleteEmailFromInbox = (id: string): boolean => {
+export const deleteEmailFromInbox = async (id: string): Promise<boolean> => {
+  const workerUrl = getWorkerUrl();
+  if (workerUrl) {
+    try {
+      const res = await fetch(`${workerUrl}/api/inbox?id=${id}`, {
+        method: "DELETE"
+      });
+      const json = await res.json();
+      if (json.success) return true;
+    } catch (e) {
+      console.error("Failed to delete email from Cloudflare Worker KV:", e);
+    }
+  }
+
   const fileStoreAvailable = initStore();
   let deleted = false;
 
   if (fileStoreAvailable) {
     try {
-      const emails = getInbox();
+      const emails = await getInbox();
       const filtered = emails.filter(e => e.id !== id);
       if (filtered.length !== emails.length) {
         fs.writeFileSync(INBOX_FILE, JSON.stringify(filtered, null, 2), "utf-8");
@@ -110,7 +155,18 @@ export const deleteEmailFromInbox = (id: string): boolean => {
   return deleted;
 };
 
-export const clearInbox = (): void => {
+export const clearInbox = async (): Promise<void> => {
+  const workerUrl = getWorkerUrl();
+  if (workerUrl) {
+    try {
+      await fetch(`${workerUrl}/api/inbox?all=true`, {
+        method: "DELETE"
+      });
+    } catch (e) {
+      console.error("Failed to clear inbox from Cloudflare Worker KV:", e);
+    }
+  }
+
   const fileStoreAvailable = initStore();
   if (fileStoreAvailable) {
     try {

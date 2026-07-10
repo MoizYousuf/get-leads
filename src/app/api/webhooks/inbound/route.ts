@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
       fromEmail = bracketMatch[2].trim();
     }
 
-    const savedEmail = addEmailToInbox({
+    const savedEmail = await addEmailToInbox({
       from: fromEmail,
       fromName: fromName || undefined,
       to: toAddresses,

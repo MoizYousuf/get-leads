@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
     // Start building query
     let dbQuery = supabase
       .from("leads")
-      .select("*", { count: "exact" });
+      .select("*, tasks(id, completed, due_date)", { count: "exact" });
 
     // Apply Filters
     if (industry) {
@@ -82,9 +82,27 @@ export async function GET(req: NextRequest) {
     const total = count || 0;
     const totalPages = Math.ceil(total / limit);
 
+    const now = new Date();
+    const leadsWithTaskCounts = (data || []).map((lead: any) => {
+      const leadTasks = lead.tasks || [];
+      const pendingTasks = leadTasks.filter((t: any) => !t.completed);
+      const overdueTasks = pendingTasks.filter(
+        (t: any) => t.due_date && new Date(t.due_date) < now
+      );
+
+      // Exclude nested tasks to keep API response compact
+      const { tasks, ...leadData } = lead;
+
+      return {
+        ...leadData,
+        pending_tasks_count: pendingTasks.length,
+        overdue_tasks_count: overdueTasks.length
+      };
+    });
+
     return NextResponse.json({
       success: true,
-      data,
+      data: leadsWithTaskCounts,
       pagination: {
         total,
         page,

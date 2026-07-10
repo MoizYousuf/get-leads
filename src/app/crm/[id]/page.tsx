@@ -95,6 +95,9 @@ const ACTIVITY_ICONS: Record<string, any> = {
   status_changed: Clock,
   email_sent: Mail,
   note_added: FileText,
+  task_created: Calendar,
+  task_completed: CheckCircle2,
+  task_deleted: Trash2,
   updated: Clock,
   default: Calendar
 };
@@ -105,6 +108,8 @@ const ACTIVITY_COLORS: Record<string, string> = {
   status_changed: "text-amber-400 bg-amber-550/10 border-amber-500/20",
   email_sent: "text-emerald-400 bg-emerald-550/10 border-emerald-500/20",
   note_added: "text-purple-400 bg-purple-550/10 border-purple-500/20",
+  task_created: "text-sky-400 bg-sky-550/10 border-sky-550/15",
+  task_completed: "text-emerald-400 bg-emerald-550/10 border-emerald-550/15",
   default: "text-slate-400 bg-slate-550/10 border-slate-500/20"
 };
 
@@ -117,14 +122,18 @@ export default function LeadDetailsPage({ params }: PageProps) {
   const [lead, setLead] = useState<Lead | null>(null);
   const [notes, setNotes] = useState<Note[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
+  const [tasks, setTasks] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
 
   // UI States
-  const [activeTab, setActiveTab] = useState<"timeline" | "notes" | "audit">("timeline");
+  const [activeTab, setActiveTab] = useState<"timeline" | "tasks" | "notes" | "audit">("timeline");
   const [newNoteContent, setNewNoteContent] = useState("");
   const [isAddingNote, setIsAddingNote] = useState(false);
   const [newTagInput, setNewTagInput] = useState("");
+  const [newTaskTitle, setNewTaskTitle] = useState("");
+  const [newTaskDueDate, setNewTaskDueDate] = useState("");
+  const [isAddingTask, setIsAddingTask] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
   // Fetch lead data
@@ -132,8 +141,12 @@ export default function LeadDetailsPage({ params }: PageProps) {
     try {
       setIsLoading(true);
       setErrorMsg("");
-      const res = await fetch(`/api/crm/leads/${id}`);
+      const [res, tasksRes] = await Promise.all([
+        fetch(`/api/crm/leads/${id}`),
+        fetch(`/api/crm/leads/${id}/tasks`)
+      ]);
       const data = await res.json();
+      const tasksData = await tasksRes.json();
 
       if (!res.ok) {
         throw new Error(data.error || "Failed to load lead details");
@@ -143,6 +156,9 @@ export default function LeadDetailsPage({ params }: PageProps) {
         setLead(data.data.lead);
         setNotes(data.data.notes);
         setActivities(data.data.activities);
+      }
+      if (tasksData.success) {
+        setTasks(tasksData.data || []);
       }
     } catch (err: any) {
       console.error(err);
@@ -313,6 +329,140 @@ export default function LeadDetailsPage({ params }: PageProps) {
       toast({
         title: "Delete Error",
         message: err.message || "Error deleting note",
+        type: "error"
+      });
+    }
+  };
+
+  // Handle create task
+  const handleCreateTask = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTaskTitle.trim()) return;
+
+    setIsAddingTask(true);
+    try {
+      const res = await fetch(`/api/crm/leads/${id}/tasks`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: newTaskTitle.trim(), due_date: newTaskDueDate || null })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setNewTaskTitle("");
+        setNewTaskDueDate("");
+        
+        // Reload tasks and activities timeline in parallel
+        const [tasksRes, leadRes] = await Promise.all([
+          fetch(`/api/crm/leads/${id}/tasks`),
+          fetch(`/api/crm/leads/${id}`)
+        ]);
+        const tasksData = await tasksRes.json();
+        const leadData = await leadRes.json();
+        
+        if (tasksData.success) setTasks(tasksData.data || []);
+        if (leadData.success) setActivities(leadData.data.activities);
+        
+        toast({
+          title: "Task Created",
+          message: `Successfully created task "${data.data.title}".`,
+          type: "success"
+        });
+      } else {
+        toast({
+          title: "Failed to Add Task",
+          message: data.error || "Failed to create task",
+          type: "error"
+        });
+      }
+    } catch (err: any) {
+      console.error(err);
+      toast({
+        title: "Create Task Error",
+        message: err.message || "An error occurred",
+        type: "error"
+      });
+    } finally {
+      setIsAddingTask(false);
+    }
+  };
+
+  // Handle toggle task completion
+  const handleToggleTask = async (taskId: string, currentCompleted: boolean) => {
+    try {
+      const res = await fetch(`/api/crm/leads/${id}/tasks/${taskId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ completed: !currentCompleted })
+      });
+      const data = await res.json();
+      if (data.success) {
+        // Update local tasks state optimistically
+        setTasks(prev => 
+          prev.map(t => t.id === taskId ? { ...t, completed: !currentCompleted } : t)
+        );
+        
+        // Reload timeline to show task completed log
+        const leadRes = await fetch(`/api/crm/leads/${id}`);
+        const leadData = await leadRes.json();
+        if (leadData.success) setActivities(leadData.data.activities);
+
+        toast({
+          title: !currentCompleted ? "Task Completed" : "Task Re-opened",
+          message: `Task successfully updated.`,
+          type: "success"
+        });
+      } else {
+        toast({
+          title: "Update Failed",
+          message: data.error || "Failed to update task",
+          type: "error"
+        });
+      }
+    } catch (err: any) {
+      console.error(err);
+      toast({
+        title: "Update Error",
+        message: err.message || "An error occurred",
+        type: "error"
+      });
+    }
+  };
+
+  // Handle delete task
+  const handleDeleteTask = async (taskId: string) => {
+    if (!confirm("Are you sure you want to delete this task?")) return;
+
+    try {
+      const res = await fetch(`/api/crm/leads/${id}/tasks/${taskId}`, {
+        method: "DELETE"
+      });
+      const data = await res.json();
+      if (data.success) {
+        // Remove task from state
+        setTasks(prev => prev.filter(t => t.id !== taskId));
+        
+        // Reload timeline to show task deleted log
+        const leadRes = await fetch(`/api/crm/leads/${id}`);
+        const leadData = await leadRes.json();
+        if (leadData.success) setActivities(leadData.data.activities);
+
+        toast({
+          title: "Task Deleted",
+          message: "Task successfully removed.",
+          type: "success"
+        });
+      } else {
+        toast({
+          title: "Delete Failed",
+          message: data.error || "Failed to delete task",
+          type: "error"
+        });
+      }
+    } catch (err: any) {
+      console.error(err);
+      toast({
+        title: "Delete Error",
+        message: err.message || "An error occurred",
         type: "error"
       });
     }
@@ -602,6 +752,16 @@ export default function LeadDetailsPage({ params }: PageProps) {
               Timeline History
             </button>
             <button
+              onClick={() => setActiveTab("tasks")}
+              className={`pb-2.5 px-4 font-bold border-b-2 transition ${
+                activeTab === "tasks"
+                  ? "border-indigo-500 text-indigo-400"
+                  : "border-transparent text-slate-450 hover:text-slate-200"
+              }`}
+            >
+              Tasks & Reminders ({tasks.filter(t => !t.completed).length})
+            </button>
+            <button
               onClick={() => setActiveTab("notes")}
               className={`pb-2.5 px-4 font-bold border-b-2 transition ${
                 activeTab === "notes"
@@ -664,6 +824,135 @@ export default function LeadDetailsPage({ params }: PageProps) {
                     })}
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* Tasks Tab */}
+            {activeTab === "tasks" && (
+              <div className="space-y-6 pt-2">
+                {/* Task creation form */}
+                <form onSubmit={handleCreateTask} className="bg-slate-900/30 border border-slate-900 p-4.5 rounded-2xl flex flex-col md:flex-row gap-3 items-end">
+                  <div className="flex-1 space-y-1.5 w-full">
+                    <label htmlFor="task-title" className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                      New Task / Follow-Up Title
+                    </label>
+                    <input
+                      id="task-title"
+                      type="text"
+                      placeholder="e.g. Call back to discuss pricing proposal"
+                      value={newTaskTitle}
+                      onChange={(e) => setNewTaskTitle(e.target.value)}
+                      className="w-full bg-slate-955 border border-slate-850 focus:border-indigo-500/50 focus:ring-4 focus:ring-indigo-500/10 rounded-xl px-4 py-2.5 text-xs text-slate-100 placeholder:text-slate-550 outline-none transition-all"
+                    />
+                  </div>
+                  <div className="w-full md:w-56 space-y-1.5">
+                    <label htmlFor="task-due" className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                      Due Date & Time
+                    </label>
+                    <input
+                      id="task-due"
+                      type="datetime-local"
+                      value={newTaskDueDate}
+                      onChange={(e) => setNewTaskDueDate(e.target.value)}
+                      className="w-full bg-slate-955 border border-slate-850 focus:border-indigo-500/50 focus:ring-4 focus:ring-indigo-500/10 rounded-xl px-4 py-2.5 text-xs text-slate-100 outline-none transition-all text-slate-300"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={isAddingTask || !newTaskTitle.trim()}
+                    className="w-full md:w-auto bg-indigo-550 hover:bg-indigo-500 text-slate-100 font-bold px-5 py-2.5 rounded-xl text-xs transition cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50"
+                  >
+                    <Plus className="w-4 h-4 shrink-0" />
+                    Add Task
+                  </button>
+                </form>
+
+                {/* Tasks List */}
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider mb-2 flex items-center gap-2">
+                      Active Tasks ({tasks.filter(t => !t.completed).length})
+                    </h3>
+                    {tasks.filter(t => !t.completed).length === 0 ? (
+                      <div className="py-8 text-center text-slate-500 border border-dashed border-slate-900 rounded-2xl text-xs italic">
+                        No active tasks. Create one above!
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {tasks.filter(t => !t.completed).map((task) => {
+                          const isOverdue = task.due_date && new Date(task.due_date) < new Date();
+                          return (
+                            <div key={task.id} className={`flex items-center justify-between p-3.5 bg-slate-900/40 border border-slate-850/60 rounded-2xl hover:border-slate-800 transition ${isOverdue ? "bg-rose-950/10 border-rose-500/20" : ""}`}>
+                              <div className="flex items-center gap-3">
+                                <button
+                                  onClick={() => handleToggleTask(task.id, task.completed)}
+                                  className="w-5 h-5 rounded border border-slate-700 bg-slate-950 hover:border-indigo-500 hover:text-indigo-400 flex items-center justify-center text-transparent hover:text-transparent transition cursor-pointer"
+                                >
+                                  <CheckCircle2 className="w-3.5 h-3.5" />
+                                </button>
+                                <div className="space-y-0.5">
+                                  <p className="text-xs font-bold text-slate-250">{task.title}</p>
+                                  {task.due_date && (
+                                    <div className="flex items-center gap-1.5 text-[10px]">
+                                      <Clock className={`w-3.5 h-3.5 ${isOverdue ? "text-rose-400 animate-pulse" : "text-slate-500"}`} />
+                                      <span className={isOverdue ? "text-rose-400 font-bold" : "text-slate-500 font-semibold"}>
+                                        {isOverdue ? "OVERDUE - " : "Due: "}
+                                        {new Date(task.due_date).toLocaleString()}
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                              <button
+                                onClick={() => handleDeleteTask(task.id)}
+                                className="p-1.5 hover:bg-slate-950/40 text-slate-500 hover:text-rose-450 rounded-lg transition cursor-pointer"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Completed Tasks */}
+                  {tasks.some(t => t.completed) && (
+                    <div className="pt-2">
+                      <h3 className="text-xs font-bold text-slate-450 uppercase tracking-wider mb-2">
+                        Completed Tasks ({tasks.filter(t => t.completed).length})
+                      </h3>
+                      <div className="space-y-2 opacity-65">
+                        {tasks.filter(t => t.completed).map((task) => (
+                          <div key={task.id} className="flex items-center justify-between p-3 bg-slate-900/20 border border-slate-900/60 rounded-2xl">
+                            <div className="flex items-center gap-3">
+                              <button
+                                onClick={() => handleToggleTask(task.id, task.completed)}
+                                className="w-5 h-5 rounded border border-indigo-500 bg-indigo-500/10 text-indigo-400 flex items-center justify-center transition cursor-pointer"
+                              >
+                                <CheckCircle2 className="w-3.5 h-3.5" />
+                              </button>
+                              <div className="space-y-0.5">
+                                <p className="text-xs font-semibold text-slate-400 line-through">{task.title}</p>
+                                {task.due_date && (
+                                  <p className="text-[10px] text-slate-500 font-semibold">
+                                    Completed (originally due: {new Date(task.due_date).toLocaleDateString()})
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => handleDeleteTask(task.id)}
+                              className="p-1.5 hover:bg-slate-950/40 text-slate-500 hover:text-rose-450 rounded-lg transition cursor-pointer"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 

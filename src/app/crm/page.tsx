@@ -29,7 +29,9 @@ import {
   UserCheck,
   MapPin,
   TrendingUp,
-  AlertCircle
+  AlertCircle,
+  List,
+  LayoutGrid
 } from "lucide-react";
 
 interface Lead {
@@ -45,6 +47,8 @@ interface Lead {
   status: string;
   tags: string[];
   created_at: string;
+  pending_tasks_count?: number;
+  overdue_tasks_count?: number;
 }
 
 const CRM_STATUSES = [
@@ -84,6 +88,7 @@ export default function CRMDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
   const [isNotConfigured, setIsNotConfigured] = useState(false);
+  const [viewMode, setViewMode] = useState<"list" | "board">("list");
 
   // Search & Filter state
   const [searchQuery, setSearchQuery] = useState("");
@@ -126,6 +131,7 @@ export default function CRMDashboard() {
     setIsLoading(true);
     setErrorMsg("");
     try {
+      const isBoard = viewMode === "board";
       const queryParams = new URLSearchParams({
         q: searchQuery,
         status: statusFilter,
@@ -135,8 +141,8 @@ export default function CRMDashboard() {
         tag: tagFilter,
         sortBy,
         sortOrder,
-        page: page.toString(),
-        limit: limit.toString()
+        page: isBoard ? "1" : page.toString(),
+        limit: isBoard ? "100" : limit.toString()
       });
 
       const res = await fetch(`/api/crm/leads?${queryParams.toString()}`);
@@ -164,7 +170,7 @@ export default function CRMDashboard() {
 
   useEffect(() => {
     fetchLeads();
-  }, [page, statusFilter, websiteFilter, sortBy, sortOrder]);
+  }, [page, statusFilter, websiteFilter, sortBy, sortOrder, viewMode]);
 
   // Handle manual trigger of filters
   const handleApplyFilters = (e: React.FormEvent) => {
@@ -183,6 +189,66 @@ export default function CRMDashboard() {
     setPage(1);
     // Directly fetch after clearing local states
     setTimeout(() => fetchLeads(), 0);
+  };
+
+  // Drag and Drop handlers for Kanban Board
+  const handleDragStart = (e: React.DragEvent, leadId: string) => {
+    e.dataTransfer.setData("text/plain", leadId);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleDrop = async (e: React.DragEvent, targetStatus: string) => {
+    e.preventDefault();
+    const leadId = e.dataTransfer.getData("text/plain");
+    if (!leadId) return;
+
+    // Find the lead to check if it's changing status
+    const targetLead = leads.find(l => l.id === leadId);
+    if (!targetLead || targetLead.status === targetStatus) return;
+
+    // Optimistically update the status locally to avoid lag
+    setLeads(prevLeads =>
+      prevLeads.map(l => (l.id === leadId ? { ...l, status: targetStatus } : l))
+    );
+
+    try {
+      const res = await fetch(`/api/crm/leads/${leadId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: targetStatus })
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast({
+          title: "Pipeline Updated",
+          message: `Moved "${targetLead.name}" to "${targetStatus}".`,
+          type: "success"
+        });
+        // Fetch fresh logs/activities in background to update counters
+        fetchLeads();
+      } else {
+        // Revert optimistically changed status on error
+        setLeads(prevLeads =>
+          prevLeads.map(l => (l.id === leadId ? { ...l, status: targetLead.status } : l))
+        );
+        toast({
+          title: "Update Failed",
+          message: data.error || "Failed to update lead status",
+          type: "error"
+        });
+      }
+    } catch (err: any) {
+      console.error(err);
+      // Revert status
+      setLeads(prevLeads =>
+        prevLeads.map(l => (l.id === leadId ? { ...l, status: targetLead.status } : l))
+      );
+      toast({
+        title: "Update Error",
+        message: err.message || "Failed to update lead status",
+        type: "error"
+      });
+    }
   };
 
   // Selection helper
@@ -392,6 +458,34 @@ export default function CRMDashboard() {
           </p>
         </div>
         <div className="flex items-center gap-2.5 self-start md:self-center">
+          {/* View Toggle */}
+          <div className="bg-slate-955 border border-slate-850 p-1 rounded-xl flex items-center gap-1 shadow-inner">
+            <button
+              type="button"
+              onClick={() => setViewMode("list")}
+              className={`p-1.5 rounded-lg transition duration-200 cursor-pointer ${
+                viewMode === "list"
+                  ? "bg-slate-900 border border-slate-800 text-indigo-400"
+                  : "text-slate-500 hover:text-slate-350"
+              }`}
+              title="List Table View"
+            >
+              <List className="w-4.5 h-4.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("board")}
+              className={`p-1.5 rounded-lg transition duration-200 cursor-pointer ${
+                viewMode === "board"
+                  ? "bg-slate-900 border border-slate-800 text-indigo-400"
+                  : "text-slate-500 hover:text-slate-350"
+              }`}
+              title="Kanban Board View"
+            >
+              <LayoutGrid className="w-4.5 h-4.5" />
+            </button>
+          </div>
+
           <Link
             href="/leads"
             className="px-4 py-2 border border-slate-800 hover:border-slate-700 bg-slate-900/40 text-xs font-bold text-slate-300 hover:text-slate-100 rounded-xl transition duration-300 flex items-center gap-2 cursor-pointer shadow-lg"
@@ -602,9 +696,31 @@ export default function CRMDashboard() {
         )}
       </AnimatePresence>
 
+      {/* Overdue Tasks Alert Banner */}
+      {!isLoading && leads.filter(l => (l.overdue_tasks_count || 0) > 0).length > 0 && (
+        <div className="bg-rose-500/10 border border-rose-500/20 text-rose-200 rounded-2xl p-4 flex gap-3.5 items-start shadow-xl">
+          <AlertCircle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <span className="font-bold text-xs uppercase tracking-wider text-rose-350 block">Overdue Follow-Up Actions</span>
+            <p className="text-slate-355 text-xs leading-normal">
+              You have {leads.filter(l => (l.overdue_tasks_count || 0) > 0).length} prospect(s) with pending actions that are past their due dates:{" "}
+              {leads.filter(l => (l.overdue_tasks_count || 0) > 0).map((l, i, arr) => (
+                <span key={l.id}>
+                  <Link href={`/crm/${l.id}`} className="font-bold text-rose-300 hover:underline">
+                    {l.name}
+                  </Link>
+                  {i < arr.length - 1 ? ", " : ""}
+                </span>
+              ))}
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* CRM Leads Table Panel */}
-      <div className="bg-slate-900/20 border border-slate-800/60 rounded-3xl overflow-hidden shadow-2xl backdrop-blur-md">
-        <div className="overflow-x-auto">
+      {viewMode === "list" ? (
+        <div className="bg-slate-900/20 border border-slate-800/60 rounded-3xl overflow-hidden shadow-2xl backdrop-blur-md">
+          <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-slate-900 text-[10px] font-bold text-slate-450 uppercase tracking-widest bg-slate-950/40">
@@ -825,6 +941,120 @@ export default function CRMDashboard() {
           </div>
         )}
       </div>
+      ) : (
+        /* Kanban Board View */
+        <div className="flex gap-4.5 overflow-x-auto pb-6 pt-1 select-none scrollbar-thin scrollbar-thumb-slate-800">
+          {CRM_STATUSES.map((columnStatus) => {
+            const columnLeads = leads.filter((l) => l.status === columnStatus);
+            
+            return (
+              <div
+                key={columnStatus}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => handleDrop(e, columnStatus)}
+                className="w-72 shrink-0 bg-slate-900/20 border border-slate-900/60 rounded-2xl p-4 flex flex-col min-h-[500px]"
+              >
+                {/* Column Header */}
+                <div className="flex items-center justify-between mb-4.5">
+                  <div className="flex items-center gap-2">
+                    <span className={`w-2 h-2 rounded-full ${
+                      columnStatus === "Won" 
+                        ? "bg-emerald-450" 
+                        : columnStatus === "Lost" 
+                        ? "bg-rose-450" 
+                        : columnStatus === "New" 
+                        ? "bg-slate-450" 
+                        : columnStatus === "Contacted" 
+                        ? "bg-amber-450" 
+                        : "bg-indigo-455"
+                    }`} />
+                    <h3 className="text-xs font-bold text-slate-100 uppercase tracking-wider">
+                      {columnStatus}
+                    </h3>
+                  </div>
+                  <span className="text-[10px] font-black bg-slate-900/65 border border-slate-850 px-2 py-0.5 rounded-full text-slate-400">
+                    {columnLeads.length}
+                  </span>
+                </div>
+
+                {/* Column Cards List */}
+                <div className="flex-1 space-y-3 overflow-y-auto scrollbar-none pr-1">
+                  {columnLeads.length === 0 ? (
+                    <div className="h-full min-h-[150px] border border-dashed border-slate-900 rounded-xl flex items-center justify-center text-[10px] text-slate-550 italic">
+                      Drag leads here
+                    </div>
+                  ) : (
+                    columnLeads.map((lead) => (
+                      <div
+                        key={lead.id}
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, lead.id)}
+                        className="bg-slate-950/80 border border-slate-850/80 hover:border-slate-800 rounded-xl p-3.5 shadow-lg space-y-3 cursor-grab active:cursor-grabbing transition hover:shadow-2xl"
+                      >
+                        <div className="space-y-1">
+                          <Link
+                            href={`/crm/${lead.id}`}
+                            className="text-xs font-bold text-slate-100 hover:text-indigo-400 transition block leading-snug"
+                          >
+                            {lead.name}
+                          </Link>
+                          {lead.owner && (
+                            <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">
+                              Owner: {lead.owner}
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Middle Info */}
+                        <div className="space-y-1">
+                          <p className="text-[10px] text-slate-405 font-semibold truncate">
+                            {lead.industry}
+                          </p>
+                          <p className="text-[9px] text-slate-500 font-medium">
+                            {lead.city}
+                          </p>
+                        </div>
+
+                        {/* Task badges */}
+                        {((lead.pending_tasks_count || 0) > 0 || (lead.overdue_tasks_count || 0) > 0) && (
+                          <div className="flex flex-wrap gap-1.5 pt-1">
+                            {(lead.overdue_tasks_count || 0) > 0 && (
+                              <span className="text-[8px] font-black uppercase tracking-wider bg-rose-500/10 text-rose-405 border border-rose-500/20 px-2 py-0.5 rounded-full flex items-center gap-1 animate-pulse">
+                                <AlertCircle className="w-2.5 h-2.5 text-rose-400" />
+                                Overdue
+                              </span>
+                            )}
+                            {(lead.pending_tasks_count || 0) > 0 && (
+                              <span className="text-[8px] font-black uppercase tracking-wider bg-sky-500/10 text-sky-405 border border-sky-500/20 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                <CheckSquare className="w-2.5 h-2.5 text-sky-400" />
+                                {lead.pending_tasks_count} Task(s)
+                              </span>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Tags */}
+                        {lead.tags && lead.tags.length > 0 && (
+                          <div className="flex flex-wrap gap-1 pt-1 border-t border-slate-900/60">
+                            {lead.tags.slice(0, 3).map((tag: string) => (
+                              <span
+                                key={tag}
+                                className="text-[8px] font-bold bg-slate-900 border border-slate-850 px-1.5 py-0.5 rounded text-slate-450 uppercase tracking-wider"
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Manual Add Lead Modal */}
       {showAddModal && (

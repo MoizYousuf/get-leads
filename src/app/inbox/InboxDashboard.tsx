@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Inbox,
   Trash2,
@@ -16,6 +17,45 @@ import {
   ChevronRight,
   AlertCircle
 } from "lucide-react";
+
+const containerVariants = {
+  hidden: { opacity: 0, y: 12 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      staggerChildren: 0.04,
+      duration: 0.35,
+      ease: "easeOut" as const
+    }
+  }
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 8 },
+  show: { 
+    opacity: 1, 
+    y: 0, 
+    transition: { 
+      type: "spring" as const, 
+      stiffness: 280, 
+      damping: 24 
+    } 
+  }
+};
+
+const readerVariants = {
+  hidden: { opacity: 0, x: 12 },
+  show: { 
+    opacity: 1, 
+    x: 0, 
+    transition: { 
+      type: "spring" as const, 
+      stiffness: 280, 
+      damping: 24 
+    } 
+  }
+};
 
 interface InboundEmail {
   id: string;
@@ -159,12 +199,20 @@ export default function InboxDashboard() {
     <div className="space-y-6">
       
       {/* Toast Notification */}
-      {showToast && (
-        <div className="fixed bottom-6 right-6 bg-slate-900 border border-sky-500/30 text-sky-200 px-5 py-3 rounded-lg shadow-2xl z-50 flex items-center gap-2 animate-bounce">
-          <span className="w-2.5 h-2.5 rounded-full bg-sky-400 animate-ping" />
-          <span className="text-sm font-semibold">{toastMessage}</span>
-        </div>
-      )}
+      <AnimatePresence>
+        {showToast && (
+          <motion.div
+            initial={{ opacity: 0, y: 25, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 15, scale: 0.95 }}
+            transition={{ type: "spring", stiffness: 350, damping: 28 }}
+            className="fixed bottom-6 right-6 bg-slate-900 border border-sky-500/30 text-sky-200 px-5 py-3 rounded-xl shadow-2xl z-50 flex items-center gap-2"
+          >
+            <span className="w-2 h-2 rounded-full bg-sky-400 animate-ping" />
+            <span className="text-sm font-bold">{toastMessage}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Header Dashboard Controls */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900/40 border border-slate-800 rounded-xl p-6 backdrop-blur-sm">
@@ -175,35 +223,41 @@ export default function InboxDashboard() {
           </h1>
           <p className="text-slate-400 text-xs mt-1">
             Receiving replies from client outreach via Resend webhook. Configure webhook endpoint to:{" "}
-            <code className="text-sky-300 bg-slate-950 px-2 py-0.5 rounded font-mono text-[10px]">/api/webhooks/inbound</code>
+            <code className="text-sky-300 bg-slate-950 px-2 py-0.5 rounded font-mono text-[10px] border border-slate-850">/api/webhooks/inbound</code>
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <button
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             onClick={() => fetchEmails()}
             className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-750 text-slate-200 border border-slate-700 px-4 py-2.5 rounded-lg text-xs font-semibold cursor-pointer transition-all"
           >
             <RefreshCw className="w-3.5 h-3.5" />
             Refresh
-          </button>
+          </motion.button>
           
-          <button
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             onClick={simulateIncomingEmail}
             disabled={actionLoading}
-            className="flex items-center gap-1.5 bg-sky-500/10 hover:bg-sky-500/20 text-sky-300 border border-sky-500/30 px-4 py-2.5 rounded-lg text-xs font-semibold cursor-pointer transition-all"
+            className="flex items-center gap-1.5 bg-sky-500/10 hover:bg-sky-500/20 text-sky-300 border border-sky-500/30 px-4 py-2.5 rounded-lg text-xs font-semibold cursor-pointer transition-all hover:shadow-[0_0_15px_rgba(14,165,233,0.15)]"
           >
             <Play className="w-3.5 h-3.5" />
             Simulate Reply
-          </button>
+          </motion.button>
 
           {emails.length > 0 && (
-            <button
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
               onClick={clearAllEmails}
-              className="flex items-center gap-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-300 border border-red-500/30 px-4 py-2.5 rounded-lg text-xs font-semibold cursor-pointer transition-all"
+              className="flex items-center gap-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-300 border border-red-500/30 px-4 py-2.5 rounded-lg text-xs font-semibold cursor-pointer transition-all hover:shadow-[0_0_15px_rgba(239,68,68,0.1)]"
             >
               <Trash2 className="w-3.5 h-3.5" />
               Clear Inbox
-            </button>
+            </motion.button>
           )}
         </div>
       </div>
@@ -211,29 +265,37 @@ export default function InboxDashboard() {
       {loading ? (
         <div className="flex flex-col items-center justify-center min-h-[350px] gap-3 bg-slate-900/25 border border-slate-850 rounded-xl p-8">
           <div className="w-10 h-10 border-4 border-sky-500/20 border-t-sky-500 rounded-full animate-spin"></div>
-          <p className="text-slate-400 text-xs animate-pulse">Loading leads replies inbox...</p>
+          <p className="text-slate-400 text-xs animate-pulse font-medium">Loading leads replies inbox...</p>
         </div>
       ) : emails.length === 0 ? (
-        <div className="flex flex-col items-center justify-center min-h-[350px] text-center p-8 bg-slate-900/20 border border-slate-850 rounded-xl">
-          <div className="w-12 h-12 bg-slate-850 rounded-full flex items-center justify-center text-slate-500 mb-4 border border-slate-800">
-            <Inbox className="w-6 h-6" />
+        <motion.div
+          initial={{ opacity: 0, scale: 0.97 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.3 }}
+          className="flex flex-col items-center justify-center min-h-[350px] text-center p-8 bg-slate-900/20 border border-slate-850 rounded-xl"
+        >
+          <div className="w-14 h-14 bg-slate-900 border border-slate-800 rounded-full flex items-center justify-center text-slate-500 mb-4 relative">
+            <span className="absolute inset-0 rounded-full border border-sky-500/25 animate-ping opacity-60" />
+            <Inbox className="w-6 h-6 text-sky-400/80" />
           </div>
-          <h3 className="font-semibold text-slate-200">Your Inbox is Empty</h3>
-          <p className="text-slate-400 text-xs max-w-sm mt-1 mb-5">
+          <h3 className="font-bold text-slate-200">Your Inbox is Empty</h3>
+          <p className="text-slate-400 text-xs max-w-sm mt-1 mb-5 leading-relaxed">
             You haven't received any email webhooks yet. Click "Simulate Reply" above to test how incoming leads emails are captured.
           </p>
-          <button
+          <motion.button
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
             onClick={simulateIncomingEmail}
-            className="bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-white font-semibold px-5 py-2.5 rounded-lg text-xs cursor-pointer shadow-lg transition-all"
+            className="bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-white font-bold px-5 py-2.5 rounded-lg text-xs cursor-pointer shadow-lg transition-all hover:shadow-[0_0_20px_rgba(14,165,233,0.3)]"
           >
             Trigger Simulated Reply Email
-          </button>
-        </div>
+          </motion.button>
+        </motion.div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
           
           {/* Email List Left Panel */}
-          <div className="lg:col-span-5 bg-slate-900/40 border border-slate-800 rounded-xl overflow-hidden flex flex-col h-[580px]">
+          <div className="lg:col-span-5 bg-slate-900/40 border border-slate-800 rounded-xl overflow-hidden flex flex-col h-[580px] backdrop-blur-sm">
             <div className="p-4 border-b border-slate-800 bg-slate-950/40 flex justify-between items-center">
               <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
                 All Message Threads
@@ -244,137 +306,170 @@ export default function InboxDashboard() {
             </div>
             
             <div className="flex-1 overflow-y-auto divide-y divide-slate-850 scrollbar-thin">
-              {emails.map((email) => {
-                const isSelected = selectedEmail?.id === email.id;
-                const formattedDate = new Date(email.date).toLocaleDateString(undefined, {
-                  month: "short",
-                  day: "numeric",
-                  hour: "2-digit",
-                  minute: "2-digit"
-                });
+              <motion.div
+                variants={containerVariants}
+                initial="hidden"
+                animate="show"
+                className="divide-y divide-slate-850"
+              >
+                {emails.map((email) => {
+                  const isSelected = selectedEmail?.id === email.id;
+                  const formattedDate = new Date(email.date).toLocaleDateString(undefined, {
+                    month: "short",
+                    day: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit"
+                  });
 
-                return (
-                  <button
-                    key={email.id}
-                    onClick={() => setSelectedEmail(email)}
-                    className={`w-full text-left p-4 transition-all duration-200 flex flex-col gap-2 cursor-pointer ${
-                      isSelected
-                        ? "bg-sky-500/10 border-l-2 border-l-sky-500 text-sky-200"
-                        : "hover:bg-slate-800/40 text-slate-300"
-                    }`}
-                  >
-                    <div className="flex justify-between items-start w-full">
-                      <div className="flex items-center gap-1.5 min-w-0">
-                        <User className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                        <span className="font-semibold text-xs text-slate-200 truncate">
-                          {email.fromName || email.from.split("@")[0]}
-                        </span>
-                      </div>
-                      <span className="text-[9px] text-slate-500 font-mono whitespace-nowrap">
-                        {formattedDate}
-                      </span>
-                    </div>
+                  return (
+                    <motion.div
+                      variants={itemVariants}
+                      key={email.id}
+                      className="w-full text-left"
+                    >
+                      <button
+                        onClick={() => setSelectedEmail(email)}
+                        className={`w-full text-left p-4 transition-all duration-200 flex flex-col gap-2 cursor-pointer relative overflow-hidden ${
+                          isSelected
+                            ? "bg-sky-500/[0.06] text-sky-200"
+                            : "hover:bg-slate-800/30 text-slate-300"
+                        }`}
+                      >
+                        {/* Dynamic Active Indicator Stripe */}
+                        {isSelected && (
+                          <motion.div
+                            layoutId="active-indicator"
+                            className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-sky-400 to-indigo-500"
+                            transition={{ type: "spring", stiffness: 350, damping: 30 }}
+                          />
+                        )}
 
-                    <div className="space-y-1">
-                      <h4 className={`text-xs font-semibold truncate ${isSelected ? "text-sky-300" : "text-slate-100"}`}>
-                        {email.subject}
-                      </h4>
-                      <p className="text-[11px] text-slate-400 line-clamp-2 leading-relaxed">
-                        {email.text || "No preview content available."}
-                      </p>
-                    </div>
+                        <div className="flex justify-between items-start w-full">
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <User className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                            <span className="font-bold text-xs text-slate-200 truncate">
+                              {email.fromName || email.from.split("@")[0]}
+                            </span>
+                          </div>
+                          <span className="text-[9px] text-slate-500 font-mono whitespace-nowrap">
+                            {formattedDate}
+                          </span>
+                        </div>
 
-                    <div className="flex justify-between items-center text-[9px] text-slate-500 border-t border-slate-850/50 pt-2 mt-1">
-                      <span className="font-mono truncate max-w-[170px]">{email.from}</span>
-                      <div className="flex items-center gap-1 text-sky-400">
-                        View Thread <ChevronRight className="w-3 h-3" />
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
+                        <div className="space-y-1">
+                          <h4 className={`text-xs font-bold truncate ${isSelected ? "text-sky-300" : "text-slate-100"}`}>
+                            {email.subject}
+                          </h4>
+                          <p className="text-[11px] text-slate-400 line-clamp-2 leading-relaxed font-medium">
+                            {email.text || "No preview content available."}
+                          </p>
+                        </div>
+
+                        <div className="flex justify-between items-center text-[9px] text-slate-500 border-t border-slate-850/50 pt-2 mt-1">
+                          <span className="font-mono truncate max-w-[170px]">{email.from}</span>
+                          <div className="flex items-center gap-0.5 text-sky-400 font-bold">
+                            View Thread <ChevronRight className="w-3 h-3" />
+                          </div>
+                        </div>
+                      </button>
+                    </motion.div>
+                  );
+                })}
+              </motion.div>
             </div>
           </div>
 
           {/* Email Details View Right Panel */}
-          <div className="lg:col-span-7 bg-slate-900/40 border border-slate-800 rounded-xl overflow-hidden flex flex-col h-[580px]">
-            {selectedEmail ? (
-              <div className="flex flex-col h-full">
-                
-                {/* Header Info */}
-                <div className="p-6 border-b border-slate-800 bg-slate-950/40 space-y-4">
-                  <div className="flex justify-between items-start gap-4">
-                    <div>
-                      <h2 className="text-base font-bold text-slate-100 leading-snug">
-                        {selectedEmail.subject}
-                      </h2>
-                      <div className="flex flex-wrap gap-x-4 gap-y-1.5 mt-2 text-xs text-slate-400 items-center">
-                        <div className="flex items-center gap-1">
-                          <span className="font-medium text-slate-500">From:</span>
-                          <span className="text-slate-200 font-semibold">
-                            {selectedEmail.fromName ? `${selectedEmail.fromName} <${selectedEmail.from}>` : selectedEmail.from}
-                          </span>
+          <div className="lg:col-span-7 bg-slate-900/40 border border-slate-800 rounded-xl overflow-hidden flex flex-col h-[580px] backdrop-blur-sm">
+            <AnimatePresence mode="wait">
+              {selectedEmail ? (
+                <motion.div
+                  key={selectedEmail.id}
+                  variants={readerVariants}
+                  initial="hidden"
+                  animate="show"
+                  exit="hidden"
+                  className="flex flex-col h-full"
+                >
+                  {/* Header Info */}
+                  <div className="p-6 border-b border-slate-800 bg-slate-950/40 space-y-4">
+                    <div className="flex justify-between items-start gap-4">
+                      <div>
+                        <h2 className="text-base font-bold text-slate-100 leading-snug">
+                          {selectedEmail.subject}
+                        </h2>
+                        <div className="flex flex-wrap gap-x-4 gap-y-1.5 mt-2 text-xs text-slate-400 items-center">
+                          <div className="flex items-center gap-1">
+                            <span className="font-medium text-slate-500">From:</span>
+                            <span className="text-slate-200 font-bold">
+                              {selectedEmail.fromName ? `${selectedEmail.fromName} <${selectedEmail.from}>` : selectedEmail.from}
+                            </span>
+                          </div>
                         </div>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex gap-1.5 shrink-0">
+                        <motion.button
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => handleReply(selectedEmail)}
+                          className="bg-sky-500 hover:bg-sky-400 text-white p-2.5 rounded-lg text-xs font-bold cursor-pointer transition-all flex items-center gap-1.5 shadow-[0_4px_12px_rgba(14,165,233,0.2)]"
+                        >
+                          <Reply className="w-3.5 h-3.5" />
+                          Reply
+                        </motion.button>
+                        <motion.button
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => deleteEmail(selectedEmail.id)}
+                          className="bg-slate-850 hover:bg-red-500/20 hover:text-red-300 hover:border-red-500/30 text-slate-400 border border-slate-700 p-2.5 rounded-lg cursor-pointer transition-all"
+                          title="Delete email"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </motion.button>
                       </div>
                     </div>
 
-                    {/* Actions */}
-                    <div className="flex gap-1.5 shrink-0">
-                      <button
-                        onClick={() => handleReply(selectedEmail)}
-                        className="bg-sky-500 hover:bg-sky-400 text-white p-2.5 rounded-lg text-xs font-semibold cursor-pointer transition-all flex items-center gap-1.5 shadow-[0_4px_12px_rgba(14,165,233,0.2)]"
-                      >
-                        <Reply className="w-3.5 h-3.5" />
-                        Reply
-                      </button>
-                      <button
-                        onClick={() => deleteEmail(selectedEmail.id)}
-                        className="bg-slate-800 hover:bg-red-500/20 hover:text-red-300 hover:border-red-500/30 text-slate-400 border border-slate-700 p-2.5 rounded-lg cursor-pointer transition-all"
-                        title="Delete email"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                    <div className="flex justify-between items-center text-[10px] text-slate-500 border-t border-slate-850 pt-3">
+                      <span className="flex items-center gap-1 font-mono">
+                        <Clock className="w-3.5 h-3.5 text-slate-400" />
+                        {new Date(selectedEmail.date).toLocaleString()}
+                      </span>
+                      <span className="bg-slate-900 border border-slate-850 px-2 py-0.5 rounded text-slate-400 font-bold">
+                        ID: {selectedEmail.id}
+                      </span>
                     </div>
                   </div>
 
-                  <div className="flex justify-between items-center text-[10px] text-slate-500 border-t border-slate-850 pt-3">
-                    <span className="flex items-center gap-1 font-mono">
-                      <Clock className="w-3.5 h-3.5" />
-                      {new Date(selectedEmail.date).toLocaleString()}
-                    </span>
-                    <span className="bg-slate-900 border border-slate-850 px-2 py-0.5 rounded text-slate-400">
-                      ID: {selectedEmail.id}
-                    </span>
+                  {/* Email Content Body */}
+                  <div className="flex-1 p-6 overflow-y-auto bg-slate-950/20 scrollbar-thin">
+                    {selectedEmail.html ? (
+                      // In a production app, we would sanitize the HTML. Since this is local mockup rendering, we display with standard Tailwind prose style.
+                      <div 
+                        className="email-html-body text-slate-300 text-sm leading-relaxed whitespace-pre-wrap font-sans"
+                        dangerouslySetInnerHTML={{ __html: selectedEmail.html }}
+                      />
+                    ) : (
+                      <div className="text-slate-300 text-sm leading-relaxed whitespace-pre-wrap font-sans">
+                        {selectedEmail.text || "No email body present."}
+                      </div>
+                    )}
                   </div>
-                </div>
 
-                {/* Email Content Body */}
-                <div className="flex-1 p-6 overflow-y-auto bg-slate-950/20 scrollbar-thin">
-                  {selectedEmail.html ? (
-                    // In a production app, we would sanitize the HTML. Since this is local mockup rendering, we display with standard Tailwind prose style.
-                    <div 
-                      className="email-html-body text-slate-300 text-sm leading-relaxed whitespace-pre-wrap font-sans"
-                      dangerouslySetInnerHTML={{ __html: selectedEmail.html }}
-                    />
-                  ) : (
-                    <div className="text-slate-300 text-sm leading-relaxed whitespace-pre-wrap font-sans">
-                      {selectedEmail.text || "No email body present."}
-                    </div>
-                  )}
+                </motion.div>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full text-center p-8">
+                  <div className="w-14 h-14 bg-slate-900 border border-slate-850 rounded-full flex items-center justify-center text-slate-600 mb-3">
+                    <MailOpen className="w-6 h-6 text-slate-500" />
+                  </div>
+                  <h4 className="font-bold text-slate-300 text-sm">No Thread Selected</h4>
+                  <p className="text-slate-500 text-xs mt-1 leading-relaxed">
+                    Select an email thread from the left list to read its content.
+                  </p>
                 </div>
-
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center h-full text-center p-8">
-                <div className="w-12 h-12 bg-slate-850 rounded-full flex items-center justify-center text-slate-600 mb-3 border border-slate-800">
-                  <MailOpen className="w-6 h-6" />
-                </div>
-                <h4 className="font-semibold text-slate-300 text-sm">No Thread Selected</h4>
-                <p className="text-slate-500 text-xs mt-1">
-                  Select an email thread from the left list to read its content.
-                </p>
-              </div>
-            )}
+              )}
+            </AnimatePresence>
           </div>
 
         </div>

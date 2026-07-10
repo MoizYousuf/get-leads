@@ -3,8 +3,60 @@ import { getInbox, deleteEmailFromInbox, clearInbox, addEmailToInbox } from "@/l
 
 export async function GET(req: NextRequest) {
   try {
-    const emails = await getInbox();
-    return NextResponse.json({ success: true, data: emails });
+    const { searchParams } = new URL(req.url);
+    const search = searchParams.get("search")?.toLowerCase().trim() || "";
+    const sender = searchParams.get("sender")?.toLowerCase().trim() || "";
+    const page = parseInt(searchParams.get("page") || "1", 10);
+    const limit = parseInt(searchParams.get("limit") || "6", 10);
+
+    const allEmails = await getInbox();
+
+    // 1. Extract unique senders from the unfiltered list for suggestions
+    const sendersMap = new Map<string, string>();
+    allEmails.forEach(email => {
+      if (email.from) {
+        sendersMap.set(email.from.toLowerCase().trim(), email.fromName || "");
+      }
+    });
+    const uniqueSenders = Array.from(sendersMap.entries()).map(([email, name]) => ({
+      email,
+      name
+    }));
+
+    // 2. Perform backend filtration
+    let filtered = allEmails;
+    if (sender) {
+      filtered = filtered.filter(email => email.from?.toLowerCase().includes(sender));
+    }
+    if (search) {
+      filtered = filtered.filter(email => 
+        email.subject?.toLowerCase().includes(search) ||
+        email.from?.toLowerCase().includes(search) ||
+        email.fromName?.toLowerCase().includes(search) ||
+        email.text?.toLowerCase().includes(search)
+      );
+    }
+
+    // 3. Paginate the filtered list
+    const totalCount = filtered.length;
+    const totalPages = Math.ceil(totalCount / limit) || 1;
+    const activePage = Math.min(Math.max(page, 1), totalPages);
+    const startIndex = (activePage - 1) * limit;
+    const paginatedEmails = filtered.slice(startIndex, startIndex + limit);
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        emails: paginatedEmails,
+        senders: uniqueSenders,
+        pagination: {
+          page: activePage,
+          limit,
+          totalCount,
+          totalPages
+        }
+      }
+    });
   } catch (error: any) {
     return NextResponse.json({ error: error.message || "Failed to fetch inbox." }, { status: 500 });
   }

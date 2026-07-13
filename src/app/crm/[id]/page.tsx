@@ -208,6 +208,8 @@ export default function LeadDetailsPage({ params }: PageProps) {
   const { id } = use(params);
   const { toast } = useToast();
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const [pastedImage, setPastedImage] = useState<string | null>(null);
+  const [isSavingPasted, setIsSavingPasted] = useState(false);
 
   // Data states
   const [lead, setLead] = useState<Lead | null>(null);
@@ -360,9 +362,91 @@ export default function LeadDetailsPage({ params }: PageProps) {
     reader.readAsDataURL(file);
   };
 
+  const handleSavePastedImage = async () => {
+    if (!pastedImage || !lead) return;
+    setIsSavingPasted(true);
+    try {
+      const res = await fetch(`/api/crm/leads/${lead.id}/audit`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ screenshot_url: pastedImage })
+      });
+      const result = await res.json();
+      if (!res.ok) {
+        throw new Error(result.error || "Failed to save custom screenshot.");
+      }
+
+      toast({
+        title: "Screenshot Saved",
+        message: "Your custom screenshot has been uploaded and registered successfully!",
+        type: "success"
+      });
+
+      setAudit((prev: any) => prev ? { ...prev, screenshot_url: pastedImage } : {
+        lead_id: lead.id,
+        screenshot_url: pastedImage,
+        scores: { performance: 80, seo: 80, mobile: 80, overall: 80 },
+        findings: { bugs: [], recommendations: [], seoKeywords: [] }
+      });
+      setPastedImage(null);
+
+    } catch (err: any) {
+      console.error(err);
+      toast({
+        title: "Upload Failed",
+        message: err.message || "Failed to upload screenshot.",
+        type: "error"
+      });
+    } finally {
+      setIsSavingPasted(false);
+    }
+  };
+
   useEffect(() => {
     fetchData();
   }, [id]);
+
+  useEffect(() => {
+    const handlePaste = async (e: ClipboardEvent) => {
+      if (activeTab !== "audit") return;
+
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf("image") !== -1) {
+          const file = items[i].getAsFile();
+          if (!file) continue;
+
+          if (file.size > 2 * 1024 * 1024) {
+            toast({
+              title: "Image Too Large",
+              message: "Please paste an image smaller than 2MB.",
+              type: "error"
+            });
+            continue;
+          }
+
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            const base64Data = event.target?.result as string;
+            setPastedImage(base64Data);
+            toast({
+              title: "Image Pasted",
+              message: "Custom screenshot preview loaded. Click 'Save Screenshot' to upload!",
+              type: "success"
+            });
+          };
+          reader.readAsDataURL(file);
+          e.preventDefault();
+          break;
+        }
+      }
+    };
+
+    window.addEventListener("paste", handlePaste);
+    return () => window.removeEventListener("paste", handlePaste);
+  }, [activeTab]);
 
   // Handle status update
   const handleStatusChange = async (newStatus: string) => {
@@ -1282,7 +1366,7 @@ export default function LeadDetailsPage({ params }: PageProps) {
                         </p>
                       </div>
                     </div>
-                  ) : !audit ? (
+                  ) : (!audit && !pastedImage) ? (
                     <div className="pt-2 bg-slate-900/10 border border-slate-855 rounded-3xl p-6 text-center space-y-4">
                       <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center mx-auto text-indigo-400">
                         <Sparkles className="w-6 h-6 animate-pulse" />
@@ -1325,20 +1409,20 @@ export default function LeadDetailsPage({ params }: PageProps) {
 
                           {/* Gauges Grid */}
                           <div className="grid grid-cols-3 gap-3 py-2">
-                            <ScoreRing score={audit.scores.performance} label="Performance" />
-                            <ScoreRing score={audit.scores.seo} label="SEO Health" />
-                            <ScoreRing score={audit.scores.mobile} label="Mobile Ready" />
+                            <ScoreRing score={audit?.scores?.performance || 80} label="Performance" />
+                            <ScoreRing score={audit?.scores?.seo || 80} label="SEO Health" />
+                            <ScoreRing score={audit?.scores?.mobile || 80} label="Mobile Ready" />
                           </div>
 
                           {/* Overall index banner */}
                           <div className="bg-slate-950/40 border border-slate-900 rounded-2xl p-3 flex items-center justify-between">
                             <span className="text-[10px] font-bold text-slate-400">Weighted Quality Index</span>
                             <span className={`text-base font-black px-2.5 py-0.5 rounded-lg ${
-                              audit.scores.overall >= 90 ? "bg-emerald-500/10 text-emerald-400" :
-                              audit.scores.overall >= 70 ? "bg-amber-500/10 text-amber-400" :
+                              (audit?.scores?.overall || 80) >= 90 ? "bg-emerald-500/10 text-emerald-400" :
+                              (audit?.scores?.overall || 80) >= 70 ? "bg-amber-500/10 text-amber-400" :
                               "bg-rose-500/10 text-rose-455"
                             }`}>
-                              {audit.scores.overall} / 100
+                              {audit?.scores?.overall || 80} / 100
                             </span>
                           </div>
                         </div>
@@ -1358,6 +1442,7 @@ export default function LeadDetailsPage({ params }: PageProps) {
                               </div>
                               <div className="flex items-center gap-2">
                                 <button
+                                  type="button"
                                   onClick={() => fileInputRef.current?.click()}
                                   className="text-slate-500 hover:text-indigo-400 transition text-[9px] font-bold flex items-center gap-1.5 cursor-pointer bg-slate-950/50 px-2 py-0.5 rounded-md border border-slate-850"
                                   title="Upload Custom Screenshot"
@@ -1385,7 +1470,7 @@ export default function LeadDetailsPage({ params }: PageProps) {
                             {/* Screenshot */}
                             <div className="aspect-video relative overflow-hidden bg-slate-950">
                               <img
-                                src={audit.screenshot_url}
+                                src={pastedImage || audit?.screenshot_url}
                                 alt="Lead website screenshot"
                                 className="w-full h-full object-cover object-top transition duration-700 group-hover:scale-102"
                                 onError={(e) => {
@@ -1394,6 +1479,33 @@ export default function LeadDetailsPage({ params }: PageProps) {
                               />
                               {/* Overlay if missing */}
                               <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent opacity-85" />
+
+                              {/* Paste Confirmation Dialog Overlay */}
+                              {pastedImage && (
+                                <div className="absolute inset-0 bg-slate-950/80 flex flex-col items-center justify-center gap-3 p-4 z-20 backdrop-blur-sm">
+                                  <div className="text-center space-y-1">
+                                    <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest block animate-pulse">Pasted Screenshot Preview</span>
+                                    <p className="text-[11px] text-slate-330">Would you like to save this image as the website screenshot?</p>
+                                  </div>
+                                  <div className="flex gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => setPastedImage(null)}
+                                      className="px-3.5 py-1.5 border border-slate-800 hover:bg-slate-900 text-slate-350 font-bold rounded-lg text-[10px] transition cursor-pointer"
+                                    >
+                                      Cancel
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={handleSavePastedImage}
+                                      disabled={isSavingPasted}
+                                      className="px-3.5 py-1.5 bg-indigo-650 hover:bg-indigo-550 text-slate-100 font-bold rounded-lg text-[10px] transition cursor-pointer flex items-center gap-1"
+                                    >
+                                      {isSavingPasted ? "Saving..." : "Save Screenshot"}
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -1408,7 +1520,7 @@ export default function LeadDetailsPage({ params }: PageProps) {
                             <h4 className="font-bold text-slate-200 text-xs">Opportunities & Site Issues</h4>
                           </div>
                           <ul className="space-y-2.5">
-                            {audit.findings.bugs.map((bug: string, index: number) => (
+                            {(audit?.findings?.bugs || []).map((bug: string, index: number) => (
                               <li key={index} className="flex gap-2 text-[11px] text-slate-350 leading-relaxed items-start">
                                 <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0 mt-1.5" />
                                 <span>{bug}</span>

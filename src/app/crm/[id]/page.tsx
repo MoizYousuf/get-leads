@@ -1028,10 +1028,10 @@ export default function LeadDetailsPage({ params }: PageProps) {
         {/* Tab Panel (Timeline / Notes / Audit) */}
         <div className="md:col-span-8 space-y-4">
           {/* Tab buttons */}
-          <div className="flex border-b border-slate-900 text-xs">
+          <div className="flex border-b border-slate-900 text-xs overflow-x-auto scrollbar-none whitespace-nowrap scroll-smooth">
             <button
               onClick={() => setActiveTab("timeline")}
-              className={`pb-2.5 px-4 font-bold border-b-2 transition ${
+              className={`pb-2.5 px-4 font-bold border-b-2 transition shrink-0 cursor-pointer ${
                 activeTab === "timeline"
                   ? "border-indigo-500 text-indigo-400"
                   : "border-transparent text-slate-450 hover:text-slate-200"
@@ -1041,7 +1041,7 @@ export default function LeadDetailsPage({ params }: PageProps) {
             </button>
             <button
               onClick={() => setActiveTab("tasks")}
-              className={`pb-2.5 px-4 font-bold border-b-2 transition ${
+              className={`pb-2.5 px-4 font-bold border-b-2 transition shrink-0 cursor-pointer ${
                 activeTab === "tasks"
                   ? "border-indigo-500 text-indigo-400"
                   : "border-transparent text-slate-450 hover:text-slate-200"
@@ -1051,7 +1051,7 @@ export default function LeadDetailsPage({ params }: PageProps) {
             </button>
             <button
               onClick={() => setActiveTab("notes")}
-              className={`pb-2.5 px-4 font-bold border-b-2 transition ${
+              className={`pb-2.5 px-4 font-bold border-b-2 transition shrink-0 cursor-pointer ${
                 activeTab === "notes"
                   ? "border-indigo-500 text-indigo-400"
                   : "border-transparent text-slate-450 hover:text-slate-200"
@@ -1061,7 +1061,7 @@ export default function LeadDetailsPage({ params }: PageProps) {
             </button>
             <button
               onClick={() => setActiveTab("audit")}
-              className={`pb-2.5 px-4 font-bold border-b-2 transition ${
+              className={`pb-2.5 px-4 font-bold border-b-2 transition shrink-0 cursor-pointer ${
                 activeTab === "audit"
                   ? "border-indigo-500 text-indigo-400"
                   : "border-transparent text-slate-450 hover:text-slate-200"
@@ -1071,7 +1071,7 @@ export default function LeadDetailsPage({ params }: PageProps) {
             </button>
             <button
               onClick={() => setActiveTab("ai-pitch")}
-              className={`pb-2.5 px-4 font-bold border-b-2 transition flex items-center gap-1.5 ${
+              className={`pb-2.5 px-4 font-bold border-b-2 transition shrink-0 cursor-pointer ${
                 activeTab === "ai-pitch"
                   ? "border-indigo-500 text-indigo-400"
                   : "border-transparent text-slate-450 hover:text-slate-200"
@@ -1082,7 +1082,7 @@ export default function LeadDetailsPage({ params }: PageProps) {
             </button>
             <button
               onClick={() => setActiveTab("proposals")}
-              className={`pb-2.5 px-4 font-bold border-b-2 transition flex items-center gap-1.5 ${
+              className={`pb-2.5 px-4 font-bold border-b-2 transition shrink-0 cursor-pointer ${
                 activeTab === "proposals"
                   ? "border-indigo-500 text-indigo-400"
                   : "border-transparent text-slate-450 hover:text-slate-200"
@@ -1091,7 +1091,8 @@ export default function LeadDetailsPage({ params }: PageProps) {
               <FileText className="w-3.5 h-3.5" />
               Proposals ({proposals.length})
             </button>
-          </div>          {/* Tab content wrapper */}
+          </div>
+          {/* Tab content wrapper */}
           <div className="min-h-[300px]">
             <AnimatePresence mode="wait">
               {/* Timeline Tab */}

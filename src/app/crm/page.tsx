@@ -101,6 +101,7 @@ export default function CRMDashboard() {
   const [errorMsg, setErrorMsg] = useState("");
   const [isNotConfigured, setIsNotConfigured] = useState(false);
   const [viewMode, setViewMode] = useState<"list" | "board">("list");
+  const [mobileBoardColumn, setMobileBoardColumn] = useState<string>("New");
 
   const fetchProposals = async () => {
     try {
@@ -989,7 +990,8 @@ export default function CRMDashboard() {
 
       {/* CRM Leads Table Panel */}
       {viewMode === "list" ? (
-        <div className="bg-slate-900/20 border border-slate-800/60 rounded-3xl overflow-hidden shadow-2xl backdrop-blur-md">
+        <>
+        <div className="bg-slate-900/20 border border-slate-800/60 rounded-3xl overflow-hidden shadow-2xl backdrop-blur-md hidden md:block">
           <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
@@ -1224,50 +1226,189 @@ export default function CRMDashboard() {
             </div>
           </div>
         )}
-      </div>
-      ) : (
-        /* Kanban Board View */
-        <motion.div 
-          ref={boardRef}
-          onDragOver={handleBoardDragOver}
-          onDragLeave={handleBoardDragEnd}
-          onDrop={handleBoardDragEnd}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.3 }}
-          className="flex gap-4.5 overflow-x-auto pb-6 pt-1 select-none scrollbar-thin scrollbar-thumb-slate-800"
-        >
-          {CRM_STATUSES.map((columnStatus) => {
-            const columnLeads = leads.filter((l) => l.status === columnStatus);
-            
+        </div>
+
+        {/* Mobile Leads Card View (Mobile only) */}
+        <div className="md:hidden space-y-3.5 px-1 pb-20">
+          {leads.map((lead) => {
+            const isSelected = selectedIds.includes(lead.id);
             return (
-              <div
-                key={columnStatus}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  if (draggedOverColumn !== columnStatus) {
-                    setDraggedOverColumn(columnStatus);
-                  }
-                }}
-                onDragLeave={() => {
-                  setDraggedOverColumn(null);
-                }}
-                onDrop={(e) => {
-                  handleDrop(e, columnStatus);
-                  setDraggedOverColumn(null);
-                }}
-                className={`w-72 shrink-0 bg-slate-900/10 border rounded-2xl p-4 flex flex-col h-[600px] transition-all duration-300 ${
-                  draggedOverColumn === columnStatus
-                    ? "bg-indigo-500/[0.03] border-indigo-500/40 border-dashed scale-[1.02] shadow-[0_10px_25px_rgba(99,102,241,0.1)]"
-                    : columnStatus === "Won"
-                    ? "border-emerald-500/10 shadow-[0_0_15px_rgba(16,185,129,0.03)]"
-                    : columnStatus === "Lost"
-                    ? "border-rose-500/10 shadow-[0_0_15px_rgba(244,63,94,0.03)]"
-                    : columnStatus === "Contacted" || columnStatus === "Email Opened"
-                    ? "border-sky-500/10 shadow-[0_0_15px_rgba(14,165,233,0.03)]"
-                    : "border-slate-900/80 shadow-[0_0_15px_rgba(99,102,241,0.02)]"
+              <div 
+                key={lead.id}
+                className={`bg-slate-900/40 border rounded-2xl p-4 space-y-3 transition backdrop-blur-md ${
+                  isSelected ? "border-indigo-500/50 bg-indigo-500/[0.02]" : "border-slate-800/60"
                 }`}
               >
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => toggleSelectLead(lead.id)}
+                      className="text-slate-500 hover:text-slate-350 cursor-pointer"
+                    >
+                      {isSelected ? (
+                        <CheckSquare className="w-4.5 h-4.5 text-indigo-400" />
+                      ) : (
+                        <Square className="w-4.5 h-4.5" />
+                      )}
+                    </button>
+                    <div>
+                      <h4 className="font-bold text-slate-100 text-sm">{lead.name}</h4>
+                      <p className="text-[10px] text-slate-400 font-medium">{lead.owner || "No Owner"}</p>
+                    </div>
+                  </div>
+                  
+                  {/* Status Badge */}
+                  <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded ${
+                    lead.status === "Won" 
+                      ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/20" 
+                      : lead.status === "Lost" 
+                      ? "bg-rose-500/15 text-rose-400 border border-rose-500/20" 
+                      : lead.status === "Contacted" 
+                      ? "bg-amber-500/15 text-amber-400 border border-amber-500/20" 
+                      : "bg-slate-800 text-slate-300 border border-slate-700"
+                  }`}>
+                    {lead.status}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 text-[10px] text-slate-400 border-t border-b border-slate-900 py-2.5">
+                  <div>
+                    <span className="text-slate-500 block uppercase tracking-wider text-[8px] font-bold">Email</span>
+                    <span className="truncate block text-slate-300 font-mono font-bold">{lead.email || "N/A"}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block uppercase tracking-wider text-[8px] font-bold">Phone</span>
+                    <span className="block text-slate-300 font-mono font-bold">{lead.phone || "N/A"}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block uppercase tracking-wider text-[8px] font-bold">Niche</span>
+                    <span className="block text-slate-300 font-bold">{lead.industry || "N/A"}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block uppercase tracking-wider text-[8px] font-bold">City</span>
+                    <span className="block text-slate-300 font-bold">{lead.city || "N/A"}</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between gap-2 pt-1">
+                  <Link
+                    href={`/crm/${lead.id}`}
+                    className="flex-1 py-2 bg-slate-900 border border-slate-800 hover:bg-slate-850 hover:text-slate-200 rounded-xl text-center text-xs font-bold text-slate-300 transition"
+                  >
+                    View Details
+                  </Link>
+                  {lead.email ? (
+                    <button
+                      onClick={() => {
+                        localStorage.setItem("khanani_outbound_draft_to", lead.email || "");
+                        localStorage.setItem("khanani_outbound_draft_client_name", lead.name || "");
+                        localStorage.setItem("khanani_outbound_draft_contact_person", lead.owner || "");
+                        localStorage.setItem("khanani_outbound_draft_city", lead.city || "");
+                        localStorage.setItem("khanani_outbound_draft_industry", lead.industry || "");
+                        localStorage.setItem("khanani_outbound_draft_website", lead.website || "");
+                        localStorage.setItem("khanani_outbound_draft_phone", lead.phone || "");
+                        localStorage.setItem("khanani_outbound_draft_mode", "single");
+                        localStorage.setItem("khanani_outbound_draft_lead_id", lead.id);
+
+                        const qTo = encodeURIComponent(lead.email || "");
+                        const qName = encodeURIComponent(lead.name || "");
+                        const qOwner = encodeURIComponent(lead.owner || "");
+                        const qCity = encodeURIComponent(lead.city || "");
+                        const qIndustry = encodeURIComponent(lead.industry || "");
+                        const qWebsite = encodeURIComponent(lead.website || "");
+                        const qPhone = encodeURIComponent(lead.phone || "");
+
+                        router.push(`/?to=${qTo}&clientName=${qName}&contact_person=${qOwner}&city=${qCity}&industry=${qIndustry}&website=${qWebsite}&phone=${qPhone}&leadId=${lead.id}`);
+                      }}
+                      className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-md"
+                    >
+                      <Mail className="w-3.5 h-3.5" />
+                      Email
+                    </button>
+                  ) : (
+                    <button
+                      disabled
+                      className="px-3.5 py-2 bg-slate-950 text-slate-700 border border-slate-900 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-not-allowed opacity-40"
+                    >
+                      <MailWarning className="w-3.5 h-3.5" />
+                      Email
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        </>
+      ) : (
+        /* Kanban Board View */
+        <div className="space-y-4 pb-20">
+          {/* Mobile Board Column Switcher (Mobile only) */}
+          <div className="flex gap-1.5 p-1 bg-slate-950 border border-slate-850 rounded-2xl md:hidden overflow-x-auto scrollbar-none">
+            {CRM_STATUSES.map((status) => {
+              const count = leads.filter((l) => l.status === status).length;
+              return (
+                <button
+                  key={status}
+                  type="button"
+                  onClick={() => setMobileBoardColumn(status)}
+                  className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all duration-200 cursor-pointer whitespace-nowrap px-3.5 ${
+                    mobileBoardColumn === status
+                      ? "bg-slate-900 text-slate-100 shadow-sm border border-slate-800"
+                      : "text-slate-500 hover:text-slate-400"
+                  }`}
+                >
+                  {status} ({count})
+                </button>
+              );
+            })}
+          </div>
+
+          <motion.div 
+            ref={boardRef}
+            onDragOver={handleBoardDragOver}
+            onDragLeave={handleBoardDragEnd}
+            onDrop={handleBoardDragEnd}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
+            className="flex gap-4.5 overflow-x-auto pb-6 pt-1 select-none scrollbar-thin scrollbar-thumb-slate-800"
+          >
+            {CRM_STATUSES.map((columnStatus) => {
+              const columnLeads = leads.filter((l) => l.status === columnStatus);
+              const isVisibleOnMobile = mobileBoardColumn === columnStatus;
+              
+              return (
+                <div
+                  key={columnStatus}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    if (draggedOverColumn !== columnStatus) {
+                      setDraggedOverColumn(columnStatus);
+                    }
+                  }}
+                  onDragLeave={() => {
+                    setDraggedOverColumn(null);
+                  }}
+                  onDrop={(e) => {
+                    handleDrop(e, columnStatus);
+                    setDraggedOverColumn(null);
+                  }}
+                  className={`w-72 shrink-0 bg-slate-900/10 border rounded-2xl p-4 flex flex-col h-[600px] transition-all duration-300 ${
+                    isVisibleOnMobile ? "block" : "hidden md:flex"
+                  } ${
+                    draggedOverColumn === columnStatus
+                      ? "bg-indigo-500/[0.03] border-indigo-500/40 border-dashed scale-[1.02] shadow-[0_10px_25px_rgba(99,102,241,0.1)]"
+                      : columnStatus === "Won"
+                      ? "border-emerald-500/10 shadow-[0_0_15px_rgba(16,185,129,0.03)]"
+                      : columnStatus === "Lost"
+                      ? "border-rose-500/10 shadow-[0_0_15px_rgba(244,63,94,0.03)]"
+                      : columnStatus === "Contacted" || columnStatus === "Email Opened"
+                      ? "border-sky-500/10 shadow-[0_0_15px_rgba(14,165,233,0.03)]"
+                      : "border-slate-900/80 shadow-[0_0_15px_rgba(99,102,241,0.02)]"
+                  }`}
+                >
                 {/* Column Header */}
                 <div className="flex items-center justify-between mb-4.5">
                   <div className="flex items-center gap-2">
@@ -1429,6 +1570,7 @@ export default function CRMDashboard() {
             );
           })}
         </motion.div>
+        </div>
       )}
       </div>
 

@@ -361,7 +361,7 @@ export default function InboxDashboard() {
           <div className={`grid grid-cols-1 lg:grid-cols-12 items-stretch min-h-[580px] border border-slate-250 rounded-2xl overflow-hidden bg-white shadow-sm transition-opacity duration-250 ${loading ? "opacity-60 pointer-events-none" : "opacity-100"}`}>
             
             {/* Email List Left Panel */}
-            <div className="lg:col-span-5 bg-white border-r border-slate-200 flex flex-col h-[580px]">
+            <div className={`lg:col-span-5 bg-white border-r border-slate-200 flex flex-col h-[580px] ${selectedEmail ? "hidden lg:flex" : "flex"}`}>
               <div className="p-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
                 <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
                   All Message Threads
@@ -592,7 +592,7 @@ export default function InboxDashboard() {
             </div>
 
             {/* Email Details View Right Panel */}
-            <div className="lg:col-span-7 bg-white flex flex-col h-[580px] overflow-hidden">
+            <div className={`lg:col-span-7 bg-white flex flex-col h-[580px] overflow-hidden ${selectedEmail ? "flex" : "hidden lg:flex"}`}>
               <AnimatePresence mode="wait">
                 {selectedEmail ? (
                   <motion.div
@@ -604,7 +604,15 @@ export default function InboxDashboard() {
                     className="flex flex-col h-full overflow-hidden"
                   >
                     {/* Detail Panel Header */}
-                    <div className="p-6 border-b border-slate-200 bg-slate-50 flex flex-col md:flex-row justify-between md:items-center gap-4 shrink-0">
+                    <div className="p-6 border-b border-slate-200 bg-slate-50 flex flex-col justify-start gap-4 shrink-0">
+                      {/* Back button on mobile */}
+                      <button
+                        onClick={() => setSelectedEmail(null)}
+                        className="lg:hidden self-start text-xs font-bold text-sky-600 hover:text-sky-700 flex items-center gap-1.5 cursor-pointer pb-2"
+                      >
+                        ← Back to Inbox
+                      </button>
+                      <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
                       <div className="min-w-0">
                         <h2 className="font-bold text-slate-800 text-base truncate">
                           {selectedEmail.subject}
@@ -618,7 +626,8 @@ export default function InboxDashboard() {
                           </div>
                         </div>
                       </div>
-
+                      </div>
+ 
                       {/* Actions */}
                       <div className="flex gap-1.5 shrink-0">
                         <motion.button

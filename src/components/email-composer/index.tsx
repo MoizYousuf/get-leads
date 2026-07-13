@@ -85,6 +85,7 @@ export default function EmailComposer() {
   const [draftLeadId, setDraftLeadId] = useState<string | null>(null);
   const [rightPanelTab, setRightPanelTab] = useState<"preview" | "ai">("preview");
   const [activeLeadDetails, setActiveLeadDetails] = useState<Recipient | null>(null);
+  const [mobileTab, setMobileTab] = useState<"compose" | "preview">("compose");
   const hasLoadedDraftRef = useRef(false);
 
   // Check query parameters to pre-populate (e.g. from history page "Send Another" or Lead Finder or CRM)
@@ -526,10 +527,37 @@ export default function EmailComposer() {
   const parsedBulkRecipients = parseBulkRecipients(bulkRecipientsText);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-      
-      {/* LEFT COLUMN: Composer Form & Template Selection */}
-      <div className="lg:col-span-7 space-y-4">
+    <div className="space-y-4">
+      {/* Mobile Tab Switcher */}
+      <div className="flex p-1 bg-slate-100 rounded-2xl lg:hidden">
+        <button
+          type="button"
+          onClick={() => setMobileTab("compose")}
+          className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all duration-200 cursor-pointer ${
+            mobileTab === "compose"
+              ? "bg-white text-slate-800 shadow-sm"
+              : "text-slate-500 hover:text-slate-800"
+          }`}
+        >
+          1. Compose Draft
+        </button>
+        <button
+          type="button"
+          onClick={() => setMobileTab("preview")}
+          className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all duration-200 cursor-pointer ${
+            mobileTab === "preview"
+              ? "bg-white text-slate-800 shadow-sm"
+              : "text-slate-500 hover:text-slate-800"
+          }`}
+        >
+          2. Live Preview & AI
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        
+        {/* LEFT COLUMN: Composer Form & Template Selection */}
+        <div className={`lg:col-span-7 space-y-4 ${mobileTab === "compose" ? "block" : "hidden lg:block"}`}>
         
         {/* Step 1: Select Email Template */}
         <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm transition-all duration-300 hover:border-slate-300">
@@ -716,10 +744,11 @@ export default function EmailComposer() {
             )}
           </form>
         </div>
+        </div>
       </div>
 
       {/* RIGHT COLUMN: Preview & AI Assist */}
-      <div className="lg:col-span-5 space-y-4">
+      <div className={`lg:col-span-5 space-y-4 ${mobileTab === "preview" ? "block" : "hidden lg:block"}`}>
         <div className="bg-slate-100 border border-slate-200 rounded-2xl p-1 flex items-center gap-1 shadow-inner">
           <button
             type="button"

@@ -495,6 +495,28 @@ export default function EmailComposer() {
 
           <form onSubmit={handleSendEmail} className="p-5 space-y-4">
             
+            {/* AI Assistant Callout Banner */}
+            {sendState !== "sending" && (
+              <div className="bg-indigo-950/25 border border-indigo-900/50 rounded-2xl p-4 flex justify-between items-center gap-4 hover:border-indigo-850/60 transition duration-200">
+                <div className="space-y-1">
+                  <span className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                    <Sparkles className="w-4 h-4 text-indigo-400 animate-pulse" />
+                    AI Outreach Copywriter
+                  </span>
+                  <p className="text-[10px] text-slate-450 leading-relaxed max-w-sm">
+                    Generate customized, high-converting cold email subject lines and body text based on niche details using Gemini AI.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setRightPanelTab("ai")}
+                  className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-550 text-[10px] font-black text-slate-100 rounded-xl transition duration-200 shadow-md cursor-pointer flex items-center gap-1 shrink-0"
+                >
+                  Open AI Generator
+                </button>
+              </div>
+            )}
+            
             {/* Conditional input modes */}
             {sendMode === "single" ? (
               <SingleModeComposer
@@ -521,7 +543,14 @@ export default function EmailComposer() {
                 <label htmlFor="subject" className="block text-xs font-semibold text-slate-450 uppercase tracking-wider">
                   Subject Line
                 </label>
-                <span className="text-[9px] text-slate-500 font-bold">Supports <code>{"{{name}}"}</code>, <code>{"{{city}}"}</code></span>
+                <button
+                  type="button"
+                  onClick={() => setRightPanelTab("ai")}
+                  className="text-[10px] text-indigo-400 hover:text-indigo-355 font-bold transition flex items-center gap-1 cursor-pointer"
+                >
+                  <Sparkles className="w-3 h-3 text-indigo-400 animate-pulse" />
+                  Generate with AI
+                </button>
               </div>
               <input
                 id="subject"
@@ -540,7 +569,14 @@ export default function EmailComposer() {
                 <label htmlFor="body" className="block text-xs font-semibold text-slate-450 uppercase tracking-wider">
                   Email Content Body
                 </label>
-                <span className="text-[9px] text-slate-500 font-bold">Supports all placeholders</span>
+                <button
+                  type="button"
+                  onClick={() => setRightPanelTab("ai")}
+                  className="text-[10px] text-indigo-400 hover:text-indigo-355 font-bold transition flex items-center gap-1 cursor-pointer"
+                >
+                  <Sparkles className="w-3 h-3 text-indigo-400 animate-pulse" />
+                  Generate with AI
+                </button>
               </div>
               <textarea
                 id="body"

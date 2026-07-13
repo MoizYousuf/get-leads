@@ -62,7 +62,7 @@ export default function BulkModeComposer({
           value={sendDelay}
           onChange={(e) => setSendDelay(Number(e.target.value))}
           disabled={disabled}
-          className="w-full h-1.5 bg-slate-850 rounded-lg appearance-none cursor-pointer accent-indigo-500 focus:outline-none"
+          className="w-full h-2 bg-slate-800 rounded-lg cursor-pointer accent-indigo-500 focus:outline-none"
         />
         <p className="text-[10px] text-slate-500 leading-normal">
           Recommended: 3–5 seconds to safely spread out bulk API triggers and prevent Resend spam flags.

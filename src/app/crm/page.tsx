@@ -652,9 +652,9 @@ export default function CRMDashboard() {
             Manage your qualified prospects, log notes, view interaction history, and coordinate automated outreach emails.
           </p>
         </div>
-        <div className="flex items-center gap-2.5 self-start md:self-center">
+        <div className="flex flex-wrap items-center gap-2.5 self-start md:self-center w-full md:w-auto md:justify-end">
           {/* View Toggle */}
-          <div className="bg-slate-955 border border-slate-850 p-1 rounded-xl flex items-center gap-1 shadow-inner">
+          <div className="bg-slate-955 border border-slate-850 p-1 rounded-xl flex items-center gap-1 shadow-inner shrink-0">
             <button
               type="button"
               onClick={() => setViewMode("list")}
@@ -683,7 +683,7 @@ export default function CRMDashboard() {
 
           <Link
             href="/leads"
-            className="px-4 py-2 border border-slate-800 hover:border-slate-700 hover:bg-slate-900/60 text-xs font-bold text-slate-350 hover:text-slate-100 rounded-xl transition duration-300 flex items-center gap-2 cursor-pointer shadow-lg"
+            className="px-4 py-2 border border-slate-800 hover:border-slate-700 hover:bg-slate-900/60 text-xs font-bold text-slate-355 hover:text-slate-100 rounded-xl transition duration-300 flex items-center gap-2 cursor-pointer shadow-lg whitespace-nowrap shrink-0"
           >
             <Search className="w-3.5 h-3.5 text-sky-400" />
             Find New Leads
@@ -696,7 +696,7 @@ export default function CRMDashboard() {
               boxShadow: "0 0 20px rgba(99, 102, 241, 0.4)",
             }}
             whileTap={{ scale: 0.97 }}
-            className="group px-4 py-2 bg-gradient-to-r from-indigo-600 via-indigo-550 to-indigo-600 hover:from-indigo-500 hover:to-indigo-550 text-xs font-bold text-white hover:text-white rounded-xl transition-all duration-200 flex items-center gap-1.5 cursor-pointer shadow-[0_4px_14px_rgba(99,102,241,0.2)] border border-indigo-500/30"
+            className="group px-4 py-2 bg-gradient-to-r from-indigo-600 via-indigo-550 to-indigo-600 hover:from-indigo-500 hover:to-indigo-550 text-xs font-bold text-white hover:text-white rounded-xl transition-all duration-200 flex items-center gap-1.5 cursor-pointer shadow-[0_4px_14px_rgba(99,102,241,0.2)] border border-indigo-500/30 whitespace-nowrap shrink-0"
           >
             <Plus className="w-4 h-4 text-white stroke-[3px] group-hover:rotate-90 transition-transform duration-300" />
             Add Lead
@@ -1194,38 +1194,6 @@ export default function CRMDashboard() {
             </tbody>
           </table>
         </div>
-
-        {/* Pagination controls */}
-        {!isLoading && totalPages > 1 && (
-          <div className="border-t border-slate-900/60 bg-slate-950/30 px-5 py-4 flex items-center justify-between text-xs text-slate-400">
-            <div>
-              Showing <span className="font-bold text-slate-200">{(page - 1) * limit + 1}</span> to{" "}
-              <span className="font-bold text-slate-200">
-                {Math.min(page * limit, totalLeads)}
-              </span>{" "}
-              of <span className="font-bold text-slate-200">{totalLeads}</span> leads
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setPage(p => Math.max(p - 1, 1))}
-                disabled={page === 1}
-                className="p-2 border border-slate-800 bg-slate-900/40 rounded-xl hover:text-slate-200 hover:bg-slate-850 transition disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-              <span className="font-bold text-slate-200 px-3">
-                Page {page} of {totalPages}
-              </span>
-              <button
-                onClick={() => setPage(p => Math.min(p + 1, totalPages))}
-                disabled={page === totalPages}
-                className="p-2 border border-slate-800 bg-slate-900/40 rounded-xl hover:text-slate-200 hover:bg-slate-850 transition disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        )}
         </div>
 
         {/* Mobile Leads Card View (Mobile only) */}
@@ -1340,6 +1308,38 @@ export default function CRMDashboard() {
             );
           })}
         </div>
+
+        {/* Pagination controls (Visible on both Mobile & Desktop) */}
+        {!isLoading && totalPages > 1 && (
+          <div className="border border-slate-800 bg-slate-900/40 rounded-2xl px-5 py-4 mt-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400 backdrop-blur-md">
+            <div>
+              Showing <span className="font-bold text-slate-200">{(page - 1) * limit + 1}</span> to{" "}
+              <span className="font-bold text-slate-200">
+                {Math.min(page * limit, totalLeads)}
+              </span>{" "}
+              of <span className="font-bold text-slate-200">{totalLeads}</span> leads
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setPage(p => Math.max(p - 1, 1))}
+                disabled={page === 1}
+                className="p-2 border border-slate-800 bg-slate-900/40 rounded-xl hover:text-slate-250 hover:bg-slate-850 transition disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <span className="font-bold text-slate-200 px-3">
+                Page {page} of {totalPages}
+              </span>
+              <button
+                onClick={() => setPage(p => Math.min(p + 1, totalPages))}
+                disabled={page === totalPages}
+                className="p-2 border border-slate-800 bg-slate-900/40 rounded-xl hover:text-slate-250 hover:bg-slate-850 transition disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
         </>
       ) : (
         /* Kanban Board View */

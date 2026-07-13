@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
+import React, { useState, useEffect, useRef } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { KHANANI_TEMPLATES } from "@/lib/templates";
 import { supabase } from "@/lib/supabase";
 import { Sparkles, User, Users, Send, ExternalLink, CheckCircle } from "lucide-react";
@@ -52,6 +52,7 @@ const parseBulkRecipients = (text: string): Recipient[] => {
 
 export default function EmailComposer() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   
   // State for tabs
   const [sendMode, setSendMode] = useState<"single" | "bulk">("single");
@@ -80,34 +81,46 @@ export default function EmailComposer() {
 
   // Lead ID to associate activity on success
   const leadId = searchParams.get("leadId") || null;
+  const [draftProposalId, setDraftProposalId] = useState<string | null>(null);
+  const [draftLeadId, setDraftLeadId] = useState<string | null>(null);
   const [rightPanelTab, setRightPanelTab] = useState<"preview" | "ai">("preview");
   const [activeLeadDetails, setActiveLeadDetails] = useState<Recipient | null>(null);
+  const hasLoadedDraftRef = useRef(false);
 
   // Check query parameters to pre-populate (e.g. from history page "Send Another" or Lead Finder or CRM)
   useEffect(() => {
+    if (hasLoadedDraftRef.current) return;
+
     try {
       const draftMode = localStorage.getItem("khanani_outbound_draft_mode");
-      const draftRecipients = localStorage.getItem("khanani_outbound_draft_recipients");
+      const draftTo = localStorage.getItem("khanani_outbound_draft_to");
+      let hasCustomPitch = false;
 
-      if (draftRecipients) {
+      if (draftTo) {
+        // Load proposal details if present
+        const proposalIdVal = localStorage.getItem("khanani_outbound_draft_proposal_id");
+        const leadIdVal = localStorage.getItem("khanani_outbound_draft_lead_id");
+        if (proposalIdVal) setDraftProposalId(proposalIdVal);
+        if (leadIdVal) setDraftLeadId(leadIdVal);
+
         if (draftMode === "bulk") {
           setSendMode("bulk");
-          setBulkRecipientsText(draftRecipients);
         } else {
           setSendMode("single");
-          const parts = draftRecipients.split(",");
-          setTo(parts[0]?.trim() || "");
-          setClientName(parts[1]?.trim() || "");
+          setTo(draftTo.trim());
+          
+          const clientNameVal = localStorage.getItem("khanani_outbound_draft_client_name") || "";
+          setClientName(clientNameVal.trim());
           
           const recipient: Recipient = {
-            email: parts[0]?.trim() || "",
-            name: parts[1]?.trim() || "",
-            contact_person: parts[2]?.trim() || "",
-            city: parts[3]?.trim() || "",
-            niche: parts[4]?.trim() || "",
-            website: parts[5]?.trim() || "",
-            phone: parts[6]?.trim() || "",
-            industry: parts[4]?.trim() || ""
+            email: draftTo.trim(),
+            name: clientNameVal.trim(),
+            contact_person: (localStorage.getItem("khanani_outbound_draft_contact_person") || "").trim(),
+            city: (localStorage.getItem("khanani_outbound_draft_city") || "").trim(),
+            niche: (localStorage.getItem("khanani_outbound_draft_industry") || "").trim(),
+            website: (localStorage.getItem("khanani_outbound_draft_website") || "").trim(),
+            phone: (localStorage.getItem("khanani_outbound_draft_phone") || "").trim(),
+            industry: (localStorage.getItem("khanani_outbound_draft_industry") || "").trim()
           };
           setActiveLeadDetails(recipient);
 
@@ -118,6 +131,7 @@ export default function EmailComposer() {
             if (customSubject) setSubject(customSubject);
             if (customBody) setBody(customBody);
             setRightPanelTab("preview");
+            hasCustomPitch = true;
           } else {
             setRightPanelTab("ai");
           }
@@ -125,13 +139,20 @@ export default function EmailComposer() {
         
         // Cleanup storage
         localStorage.removeItem("khanani_outbound_draft_mode");
-        localStorage.removeItem("khanani_outbound_draft_recipients");
+        localStorage.removeItem("khanani_outbound_draft_to");
+        localStorage.removeItem("khanani_outbound_draft_client_name");
+        localStorage.removeItem("khanani_outbound_draft_contact_person");
+        localStorage.removeItem("khanani_outbound_draft_city");
+        localStorage.removeItem("khanani_outbound_draft_industry");
+        localStorage.removeItem("khanani_outbound_draft_website");
+        localStorage.removeItem("khanani_outbound_draft_phone");
         localStorage.removeItem("khanani_outbound_draft_subject");
         localStorage.removeItem("khanani_outbound_draft_body");
+        localStorage.removeItem("khanani_outbound_draft_proposal_id");
+        localStorage.removeItem("khanani_outbound_draft_lead_id");
 
         // Initialize template if no custom pitch was loaded
-        const customSubject = localStorage.getItem("khanani_outbound_draft_subject");
-        if (!customSubject) {
+        if (!hasCustomPitch) {
           const defaultTemplate = KHANANI_TEMPLATES[0];
           if (defaultTemplate) {
             setSelectedTemplateId(defaultTemplate.id);
@@ -139,6 +160,7 @@ export default function EmailComposer() {
             setBody(defaultTemplate.defaultBody);
           }
         }
+        hasLoadedDraftRef.current = true;
         return;
       }
     } catch (storageErr) {
@@ -159,6 +181,7 @@ export default function EmailComposer() {
         setSelectedTemplateId(templateParam);
         setSubject(subjectParam || foundTemplate.defaultSubject);
         setBody(bodyParam || foundTemplate.defaultBody);
+        hasLoadedDraftRef.current = true;
         return;
       }
     }
@@ -170,6 +193,7 @@ export default function EmailComposer() {
       setSubject(defaultTemplate.defaultSubject);
       setBody(defaultTemplate.defaultBody);
     }
+    hasLoadedDraftRef.current = true;
   }, [searchParams]);
 
   // Handle template selection
@@ -293,6 +317,23 @@ export default function EmailComposer() {
           } catch (crmErr) {
             console.error("Failed to log activity to Supabase:", crmErr);
           }
+
+          // Check if this was a proposal outreach draft, and update status to 'Sent'
+          const proposalId = localStorage.getItem("khanani_outbound_draft_proposal_id") || draftProposalId;
+          const currentLeadId = leadId || draftLeadId || localStorage.getItem("khanani_outbound_draft_lead_id");
+          if (proposalId && currentLeadId) {
+            try {
+              await fetch(`/api/crm/leads/${currentLeadId}/proposals/${proposalId}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ status: "Sent" })
+              });
+              setDraftProposalId(null);
+              setDraftLeadId(null);
+            } catch (proposalErr) {
+              console.error("Failed to update proposal status to Sent:", proposalErr);
+            }
+          }
         } else if (sendMode === "bulk" && supabase) {
           // If bulk, we can try to look up lead by email address and log activity
           try {
@@ -359,10 +400,24 @@ export default function EmailComposer() {
       setProgressMessage(`Completed! Successfully dispatched all ${successCount} emails.`);
       setSendState("success");
       setSentDetails({ count: successCount });
+
+      const currentLeadId = leadId || draftLeadId || localStorage.getItem("khanani_outbound_draft_lead_id");
+      if (currentLeadId) {
+        setTimeout(() => {
+          router.push(`/crm/${currentLeadId}`);
+        }, 1500);
+      }
     } else if (successCount > 0) {
       setProgressMessage(`Outreach complete: ${successCount} sent, ${failedCount} failed.`);
       setSendState("success");
       setSentDetails({ count: successCount, failed: failedCount });
+
+      const currentLeadId = leadId || draftLeadId || localStorage.getItem("khanani_outbound_draft_lead_id");
+      if (currentLeadId) {
+        setTimeout(() => {
+          router.push(`/crm/${currentLeadId}`);
+        }, 1500);
+      }
     } else {
       setErrorMsg("Failed to send outreach emails. Please check Resend API Key credentials.");
       setSendState("error");

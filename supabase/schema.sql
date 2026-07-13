@@ -89,3 +89,24 @@ CREATE TRIGGER update_tasks_updated_at
     BEFORE UPDATE ON tasks
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
+
+-- 6. Create proposals table (quotes, billing proposals)
+CREATE TABLE IF NOT EXISTS proposals (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    lead_id UUID NOT NULL REFERENCES leads(id) ON DELETE CASCADE,
+    title TEXT NOT NULL,
+    amount NUMERIC(10, 2) DEFAULT 0.00,
+    status TEXT DEFAULT 'Draft', -- 'Draft', 'Sent', 'Accepted', 'Declined'
+    services JSONB DEFAULT '[]'::jsonb, -- Array of items: { description: text, price: number }
+    notes TEXT,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_proposals_lead_id ON proposals(lead_id);
+CREATE INDEX IF NOT EXISTS idx_proposals_status ON proposals(status);
+
+CREATE TRIGGER update_proposals_updated_at
+    BEFORE UPDATE ON proposals
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();

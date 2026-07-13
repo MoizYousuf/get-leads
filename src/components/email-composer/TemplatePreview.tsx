@@ -54,9 +54,11 @@ export default function TemplatePreview({ preview, sendMode }: TemplatePreviewPr
           <div>
             {/* Header inside email */}
             <div className="bg-slate-900 rounded-xl p-4 text-center mb-6 flex justify-center items-center">
-              <h1 className="text-base font-black tracking-tight text-white m-0">
-                Khanani <span className="text-sky-400 font-extrabold">Innovations</span>
-              </h1>
+              <img
+                src="/logo/khanani-logo-white.png"
+                alt="Khanani Innovations"
+                className="h-14 object-contain"
+              />
             </div>
 
             {/* Body inside email */}

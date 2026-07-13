@@ -13,8 +13,8 @@ export async function POST(req: NextRequest) {
 
     if (!apiKey) {
       // Return a simulated high-converting copywriter template if API Key is not set yet
-      const subject = `Quick question regarding ${name}`;
-      const emailBody = `Hi ${owner || "there"},\n\nI was looking at ${name} in ${city || "your city"} and noticed your great work in the ${industry || "local"} niche.${focus ? ` I saw you are focused on ${focus}.` : ""}\n\nWe help businesses in ${city || "your area"} generate more leads and streamline their client outreach. Would you be open to a quick 2-minute reply if we can help you scale up?\n\nBest,\n[Your Name]`;
+      const subject = `Quick question regarding {{name}}`;
+      const emailBody = `Hi {{contact_person}},\n\nI was looking at {{name}} in {{city}} and noticed your great work in the {{industry}} niche.${focus ? ` I saw you are focused on ${focus}.` : ""}\n\nWe help businesses in {{city}} generate more leads and streamline their client outreach. Would you be open to a quick 2-minute reply if we can help you scale up?\n\nBest,\n[Your Name]`;
 
       return NextResponse.json({
         success: true,
@@ -29,6 +29,16 @@ export async function POST(req: NextRequest) {
     // Formulate a professional copywriter prompt for Gemini
     const prompt = `You are a world-class cold outreach copywriter. Write a highly personalized, compelling, short cold email to a business prospect.
 
+Sender Information:
+- Sender Company: Khanani Innovations (https://khananiinnovations.com)
+- Tagline & Style: Digital Product Studio based in Karachi, Pakistan, serving clients globally. Run by senior engineers. Fast delivery (often 3-5 days for first build). High-performance, clean, and 100% production-ready.
+- Services Offered:
+  1. Web Design & Development: Blazing-fast custom Next.js websites and full-stack web applications.
+  2. Mobile Apps: Cross-platform React Native apps for iOS & Android.
+  3. Web3 & Solana: dApps, EVM contracts, Solana integration, and token setups.
+  4. Brand Identity: Logo design, custom typography, Figma layouts, and brand systems.
+  5. Technical SEO & compounding growth structures.
+
 Lead Details:
 - Company Name: ${name}
 - Niche/Industry: ${industry || "Local business"}
@@ -42,35 +52,65 @@ Writing Guidelines:
 2. Length: Under 110 words. Extremely concise.
 3. Call to Action: A single, low-friction request asking for a simple reply (e.g. "Do you have 2 minutes to reply?").
 4. Constraints: Do NOT use generic AI filler phrases. Never write "Hope this email finds you well", "As a busy owner", "I came across your website", "We are a full-service agency", or "Let's hop on a call". Start directly with the hook or a friendly greeting.
-5. Format: The first line must be the subject line starting with "Subject: ". The rest must be the email body. Use "[Your Name]" as the sender signature at the end.
+5. Format: The first line must be the subject line starting with "Subject: ". The rest must be the email body. Use "Khanani Innovations Team" as the sender signature at the end.
+6. Placeholders Rule: In the final generated email (both subject and body), do NOT write out the actual values for company name, location/city, contact person, or niche. Instead, write the exact matching literal tags:
+   - Use "{{name}}" for the Company Name
+   - Use "{{city}}" for the Location/City
+   - Use "{{contact_person}}" for the Contact Person Name
+   - Use "{{industry}}" for the Niche/Industry
 
-Write the email now:`;
+Write the email now using the literal tags:`;
 
-    // Make the REST API call to Gemini
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    // Try available models sequentially to bypass localized rate limits
+    const modelsToTry = [
+      "gemini-2.5-flash",
+      "gemini-2.0-flash",
+      "gemini-flash-latest"
+    ];
 
-    const response = await fetch(geminiUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [
+    let response: Response | null = null;
+    let lastErrorMsg = "";
+
+    for (const model of modelsToTry) {
+      const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+      try {
+        response = await fetch(geminiUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            contents: [
               {
-                text: prompt
+                parts: [
+                  {
+                    text: prompt
+                  }
+                ]
               }
             ]
-          }
-        ]
-      })
-    });
+          })
+        });
 
-    if (!response.ok) {
-      const errText = await response.text();
-      console.error("Gemini REST API failure:", errText);
-      return NextResponse.json({ success: false, error: "Failed to communicate with Gemini API" }, { status: 502 });
+        if (response.ok) {
+          break; // Success!
+        } else {
+          const errText = await response.text();
+          lastErrorMsg = `Model ${model} failed: ${errText}`;
+          console.warn(lastErrorMsg);
+        }
+      } catch (err: any) {
+        lastErrorMsg = `Model ${model} fetch exception: ${err.message}`;
+        console.warn(lastErrorMsg);
+      }
+    }
+
+    if (!response || !response.ok) {
+      console.error("All Gemini API models failed to generate content:", lastErrorMsg);
+      return NextResponse.json({ 
+        success: false, 
+        error: "Exceeded free tier quotas or rate limits on all Gemini models. Please wait a few seconds and try again." 
+      }, { status: 502 });
     }
 
     const resultData = await response.json();

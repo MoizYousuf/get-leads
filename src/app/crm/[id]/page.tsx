@@ -124,11 +124,12 @@ export default function LeadDetailsPage({ params }: PageProps) {
   const [notes, setNotes] = useState<Note[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [tasks, setTasks] = useState<any[]>([]);
+  const [proposals, setProposals] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
 
   // UI States
-  const [activeTab, setActiveTab] = useState<"timeline" | "tasks" | "notes" | "audit" | "ai-pitch">("timeline");
+  const [activeTab, setActiveTab] = useState<"timeline" | "tasks" | "notes" | "audit" | "ai-pitch" | "proposals">("timeline");
   const [newNoteContent, setNewNoteContent] = useState("");
   const [isAddingNote, setIsAddingNote] = useState(false);
   const [newTagInput, setNewTagInput] = useState("");
@@ -142,12 +143,14 @@ export default function LeadDetailsPage({ params }: PageProps) {
     try {
       setIsLoading(true);
       setErrorMsg("");
-      const [res, tasksRes] = await Promise.all([
+      const [res, tasksRes, proposalsRes] = await Promise.all([
         fetch(`/api/crm/leads/${id}`),
-        fetch(`/api/crm/leads/${id}/tasks`)
+        fetch(`/api/crm/leads/${id}/tasks`),
+        fetch(`/api/crm/leads/${id}/proposals`)
       ]);
       const data = await res.json();
       const tasksData = await tasksRes.json();
+      const proposalsData = await proposalsRes.json();
 
       if (!res.ok) {
         throw new Error(data.error || "Failed to load lead details");
@@ -160,6 +163,9 @@ export default function LeadDetailsPage({ params }: PageProps) {
       }
       if (tasksData.success) {
         setTasks(tasksData.data || []);
+      }
+      if (proposalsData.success) {
+        setProposals(proposalsData.data || []);
       }
     } catch (err: any) {
       console.error(err);
@@ -793,6 +799,17 @@ export default function LeadDetailsPage({ params }: PageProps) {
               <Sparkles className="w-3.5 h-3.5" />
               AI Pitch Generator
             </button>
+            <button
+              onClick={() => setActiveTab("proposals")}
+              className={`pb-2.5 px-4 font-bold border-b-2 transition flex items-center gap-1.5 ${
+                activeTab === "proposals"
+                  ? "border-indigo-500 text-indigo-400"
+                  : "border-transparent text-slate-450 hover:text-slate-200"
+              }`}
+            >
+              <FileText className="w-3.5 h-3.5" />
+              Proposals ({proposals.length})
+            </button>
           </div>
 
           {/* Tab content wrapper */}
@@ -1063,6 +1080,15 @@ export default function LeadDetailsPage({ params }: PageProps) {
             {activeTab === "ai-pitch" && (
               <AIPitchGeneratorWidget lead={lead} />
             )}
+
+            {/* Proposals Tab */}
+            {activeTab === "proposals" && (
+              <ProposalsManagerWidget
+                lead={lead}
+                proposals={proposals}
+                onRefresh={fetchData}
+              />
+            )}
           </div>
         </div>
       </div>
@@ -1249,6 +1275,571 @@ function AIPitchGeneratorWidget({ lead }: AIPitchGeneratorWidgetProps) {
               No email registered for this prospect. Please update their contact details to send.
             </div>
           )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Proposals Manager Widget for CRM Leads dossier
+interface ProposalsManagerWidgetProps {
+  lead: Lead;
+  proposals: any[];
+  onRefresh: () => void;
+}
+
+function ProposalsManagerWidget({ lead, proposals, onRefresh }: ProposalsManagerWidgetProps) {
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingProposal, setEditingProposal] = useState<any | null>(null);
+  
+  // Form Fields
+  const [title, setTitle] = useState("");
+  const [status, setStatus] = useState("Draft");
+  const [focus, setFocus] = useState("");
+  const [notes, setNotes] = useState("");
+  const [services, setServices] = useState<{ description: string; price: number }[]>([]);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const { toast } = useToast();
+
+  // Reset Form
+  const resetForm = () => {
+    setTitle("");
+    setStatus("Draft");
+    setFocus("");
+    setNotes("");
+    setServices([]);
+    setEditingProposal(null);
+  };
+
+  // Open Create Form
+  const handleOpenCreate = () => {
+    resetForm();
+    setIsFormOpen(true);
+  };
+
+  // Open Edit Form
+  const handleOpenEdit = (proposal: any) => {
+    setEditingProposal(proposal);
+    setTitle(proposal.title);
+    setStatus(proposal.status);
+    setNotes(proposal.notes || "");
+    setServices(proposal.services || []);
+    setIsFormOpen(true);
+  };
+
+  // Generate services with AI
+  const handleGenerateServices = async () => {
+    setIsGenerating(true);
+    try {
+      const res = await fetch(`/api/crm/leads/${lead.id}/proposals/generate-services`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ focus })
+      });
+      const data = await res.json();
+      if (data.success && Array.isArray(data.data)) {
+        setServices(data.data);
+        toast({
+          title: "Services Suggested",
+          message: "Tailored services and estimates have been generated by Gemini.",
+          type: "success"
+        });
+      } else {
+        toast({
+          title: "Generation Failed",
+          message: data.error || "Could not generate services.",
+          type: "error"
+        });
+      }
+    } catch (err: any) {
+      console.error(err);
+      toast({
+        title: "Network Error",
+        message: "Failed to connect to the service generator.",
+        type: "error"
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  // Add a line item row
+  const handleAddRow = () => {
+    setServices([...services, { description: "", price: 0 }]);
+  };
+
+  // Remove a line item row
+  const handleRemoveRow = (index: number) => {
+    setServices(services.filter((_, i) => i !== index));
+  };
+
+  // Update a line item row field
+  const handleUpdateRow = (index: number, field: "description" | "price", value: any) => {
+    const updated = [...services];
+    if (field === "price") {
+      updated[index].price = Number(value) || 0;
+    } else {
+      updated[index].description = value;
+    }
+    setServices(updated);
+  };
+
+  // Auto-calculated Grand Total
+  const totalAmount = services.reduce((sum, item) => sum + item.price, 0);
+
+  // Save proposal (POST or PATCH)
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!title.trim()) return;
+
+    setIsSaving(true);
+    try {
+      const url = editingProposal
+        ? `/api/crm/leads/${lead.id}/proposals/${editingProposal.id}`
+        : `/api/crm/leads/${lead.id}/proposals`;
+      
+      const method = editingProposal ? "PATCH" : "POST";
+
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: title.trim(),
+          amount: totalAmount,
+          status,
+          services,
+          notes: notes.trim()
+        })
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        toast({
+          title: editingProposal ? "Proposal Updated" : "Proposal Created",
+          message: `Saved "${title}" successfully.`,
+          type: "success"
+        });
+        setIsFormOpen(false);
+        resetForm();
+        onRefresh();
+      } else {
+        toast({
+          title: "Save Failed",
+          message: data.error || "Failed to save proposal details.",
+          type: "error"
+        });
+      }
+    } catch (err: any) {
+      console.error(err);
+      toast({
+        title: "Error Saving",
+        message: "Failed to connect to proposal database endpoints.",
+        type: "error"
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Update Status dropdown quickly on card
+  const handleQuickStatusChange = async (proposal: any, newStatus: string) => {
+    try {
+      const res = await fetch(`/api/crm/leads/${lead.id}/proposals/${proposal.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus })
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast({
+          title: "Stage Updated",
+          message: `Proposal marked as ${newStatus}.`,
+          type: "success"
+        });
+        onRefresh();
+      }
+    } catch (err: any) {
+      console.error(err);
+      toast({
+        title: "Error",
+        message: "Failed to update proposal stage.",
+        type: "error"
+      });
+    }
+  };
+  // Delete proposal
+  const handleDelete = async (proposalId: string, proposalTitle: string) => {
+    if (!confirm(`Are you sure you want to permanently remove "${proposalTitle}"?`)) return;
+
+    try {
+      const res = await fetch(`/api/crm/leads/${lead.id}/proposals/${proposalId}`, {
+        method: "DELETE"
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast({
+          title: "Proposal Deleted",
+          message: "Proposal has been removed.",
+          type: "success"
+        });
+        onRefresh();
+      }
+    } catch (err: any) {
+      console.error(err);
+      toast({
+        title: "Error",
+        message: "Could not connect to delete endpoints.",
+        type: "error"
+      });
+    }
+  };
+
+  const router = useRouter();
+
+  // Send proposal via Email Outbox redirect
+  const handleSendViaEmail = (proposal: any) => {
+    let breakdownText = "";
+    if (Array.isArray(proposal.services) && proposal.services.length > 0) {
+      breakdownText = "\n\nProposed Deliverables & Pricing Breakdown:\n" + 
+        proposal.services.map((s: any) => `• ${s.description}: $${(s.price || 0).toLocaleString("en-US")}`).join("\n");
+    }
+
+    const emailBody = `Hi {{contact_person}},\n\nFollowing up on our discussions, I have put together a custom services proposal for {{name}}:\n\nTitle: ${proposal.title}${breakdownText}\n\n--------------------------------------------------\nTotal Investment: $${(Number(proposal.amount) || 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}\n--------------------------------------------------\n${proposal.notes ? `\nNotes & Terms:\n${proposal.notes}\n` : ""}\nPlease review these details and let me know if you would like to proceed or suggest any adjustments. We can get started on this as early as this week.\n\nBest regards,\nKhanani Innovations Team`;
+
+    localStorage.setItem("khanani_outbound_draft_to", lead.email || "");
+    localStorage.setItem("khanani_outbound_draft_client_name", lead.name || "");
+    localStorage.setItem("khanani_outbound_draft_contact_person", lead.owner || "");
+    localStorage.setItem("khanani_outbound_draft_city", lead.city || "");
+    localStorage.setItem("khanani_outbound_draft_industry", lead.industry || "");
+    localStorage.setItem("khanani_outbound_draft_website", lead.website || "");
+    localStorage.setItem("khanani_outbound_draft_phone", lead.phone || "");
+    localStorage.setItem("khanani_outbound_draft_mode", "single");
+    localStorage.setItem("khanani_outbound_draft_subject", `Proposal: ${proposal.title} - Khanani Innovations`);
+    localStorage.setItem("khanani_outbound_draft_body", emailBody);
+    localStorage.setItem("khanani_outbound_draft_proposal_id", proposal.id);
+    localStorage.setItem("khanani_outbound_draft_lead_id", lead.id);
+
+    toast({
+      title: "Proposal Pitch Created",
+      message: "Redirecting to email composer with proposal loaded.",
+      type: "success"
+    });
+
+    router.push(`/?leadId=${lead.id}`);
+  };
+
+  // Totals calculations
+  const totalBidsVal = proposals.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+  const acceptedBidsVal = proposals
+    .filter((p) => p.status === "Accepted")
+    .reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+
+  return (
+    <div className="space-y-4 pt-2">
+      {/* Metrics Banner */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="bg-slate-950/40 border border-slate-900 p-3.5 rounded-2xl space-y-1">
+          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Created Bids</span>
+          <span className="text-sm font-black text-slate-200 block">{proposals.length} Proposals</span>
+        </div>
+        <div className="bg-slate-950/40 border border-slate-900 p-3.5 rounded-2xl space-y-1">
+          <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider block">Total Bidded Value</span>
+          <span className="text-sm font-black text-indigo-300 block">${totalBidsVal.toLocaleString("en-US", { minimumFractionDigits: 2 })}</span>
+        </div>
+        <div className="bg-slate-950/40 border border-slate-900 p-3.5 rounded-2xl space-y-1">
+          <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider block">Closed Won Value</span>
+          <span className="text-sm font-black text-emerald-300 block">${acceptedBidsVal.toLocaleString("en-US", { minimumFractionDigits: 2 })}</span>
+        </div>
+      </div>
+
+      <div className="flex justify-between items-center pb-2 border-b border-slate-900">
+        <h3 className="font-bold text-slate-200 text-xs flex items-center gap-1.5">
+          <FileText className="w-4 h-4 text-indigo-400" />
+          Proposals Outreach Sheet
+        </h3>
+        {!isFormOpen && (
+          <button
+            onClick={handleOpenCreate}
+            className="flex items-center gap-1 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-[10px] font-black text-slate-100 rounded-xl transition duration-150 shadow-md cursor-pointer"
+          >
+            <Plus className="w-3 h-3 stroke-[3]" />
+            New Proposal
+          </button>
+        )}
+      </div>
+
+      {isFormOpen && (
+        <form onSubmit={handleSave} className="bg-slate-950/40 border border-slate-900 p-5 rounded-3xl space-y-4 animate-fade-in text-slate-350">
+          <div className="flex justify-between items-center pb-2 border-b border-slate-900">
+            <h4 className="font-bold text-slate-200 text-xs">
+              {editingProposal ? "Edit Proposal" : "Create New Proposal"}
+            </h4>
+            <button
+              type="button"
+              onClick={() => setIsFormOpen(false)}
+              className="text-slate-500 hover:text-slate-200 transition"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest block">Proposal Title</label>
+              <input
+                type="text"
+                required
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="e.g. Website Redesign & Lead Setup"
+                className="w-full bg-slate-950 border border-slate-850 text-slate-200 text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500 transition"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest block">Status</label>
+              <select
+                value={status}
+                onChange={(e) => setStatus(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-850 text-slate-200 text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500 transition cursor-pointer"
+              >
+                <option value="Draft">Draft</option>
+                <option value="Sent">Sent</option>
+                <option value="Accepted">Accepted (Closed Won)</option>
+                <option value="Declined">Declined (Closed Lost)</option>
+              </select>
+            </div>
+          </div>
+
+          {/* AI Generator Assist Box */}
+          {!editingProposal && (
+            <div className="bg-indigo-950/15 border border-indigo-900/50 p-4 rounded-2xl space-y-3">
+              <div className="flex items-center gap-1.5">
+                <Sparkles className="w-4 h-4 text-indigo-400 animate-pulse" />
+                <span className="text-xs font-bold text-slate-200">AI Service Generator (Gemini)</span>
+              </div>
+              <p className="text-[10px] text-slate-455 leading-relaxed">
+                Analyze this lead's business niche and generate a complete structured pricing list with descriptions automatically.
+              </p>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={focus}
+                  onChange={(e) => setFocus(e.target.value)}
+                  placeholder="Focus area (e.g. full branding, NextJS speed optimization)"
+                  className="flex-1 bg-slate-950 border border-slate-850 text-slate-200 text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-indigo-500 transition"
+                />
+                <button
+                  type="button"
+                  onClick={handleGenerateServices}
+                  disabled={isGenerating}
+                  className="px-4 bg-indigo-600 hover:bg-indigo-550 disabled:bg-slate-800 disabled:text-slate-500 text-slate-100 font-bold rounded-xl text-[10px] transition shrink-0 flex items-center gap-1"
+                >
+                  {isGenerating ? (
+                    <>
+                      <div className="w-3 h-3 border-2 border-slate-500 border-t-white rounded-full animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-3.5 h-3.5" />
+                      Generate
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Line Items List */}
+          <div className="space-y-2">
+            <div className="flex justify-between items-center">
+              <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Service Deliverables / Pricing Rows</span>
+              <button
+                type="button"
+                onClick={handleAddRow}
+                className="text-[9px] text-indigo-400 hover:text-indigo-350 font-bold flex items-center gap-0.5"
+              >
+                <Plus className="w-3 h-3" />
+                Add Item
+              </button>
+            </div>
+
+            {services.length === 0 ? (
+              <div className="py-6 text-center text-slate-600 text-xs italic bg-slate-950/20 border border-dashed border-slate-900 rounded-xl">
+                No items added yet. Use the AI Generator above or click "Add Item" to add manually.
+              </div>
+            ) : (
+              <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                {services.map((item, idx) => (
+                  <div key={idx} className="flex gap-2 items-center animate-fade-in">
+                    <input
+                      type="text"
+                      required
+                      value={item.description}
+                      onChange={(e) => handleUpdateRow(idx, "description", e.target.value)}
+                      placeholder="e.g. Custom Web3 Solana Mint page"
+                      className="flex-1 bg-slate-950 border border-slate-850 text-slate-200 text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-indigo-500 transition"
+                    />
+                    <div className="relative w-28">
+                      <span className="absolute left-3 top-2.5 text-slate-500 text-xs">$</span>
+                      <input
+                        type="number"
+                        required
+                        min={0}
+                        value={item.price}
+                        onChange={(e) => handleUpdateRow(idx, "price", e.target.value)}
+                        placeholder="Price"
+                        className="w-full bg-slate-950 border border-slate-850 text-slate-200 text-xs rounded-xl pl-6 pr-3 py-2 focus:outline-none focus:border-indigo-500 transition font-mono"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveRow(idx)}
+                      className="p-2 text-rose-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-xl transition"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="flex justify-between items-center pt-3 border-t border-slate-900 text-xs">
+            <span className="font-bold text-slate-455 uppercase tracking-wider">Estimated Proposal Value:</span>
+            <span className="font-black text-indigo-400 font-mono text-sm">${totalAmount.toLocaleString("en-US", { minimumFractionDigits: 2 })}</span>
+          </div>
+
+          {/* Notes */}
+          <div className="space-y-1">
+            <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest block">Terms / Deliverables Notes (Optional)</label>
+            <textarea
+              rows={3}
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="e.g. Terms: 50% upfront deposit, 50% upon deployment. Deliverable timeline is 14 business days."
+              className="w-full bg-slate-950 border border-slate-850 text-slate-200 text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-indigo-500 transition"
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={isSaving}
+            className="w-full bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-800 disabled:text-slate-500 text-slate-100 font-black py-2.5 rounded-xl text-xs transition shadow-md cursor-pointer flex items-center justify-center gap-1.5"
+          >
+            {isSaving ? (
+              <>
+                <div className="w-3.5 h-3.5 border-2 border-slate-500 border-t-white rounded-full animate-spin" />
+                Saving proposal data...
+              </>
+            ) : (
+              <>
+                <CheckCircle2 className="w-3.5 h-3.5 text-slate-100" />
+                {editingProposal ? "Update Proposal" : "Save Outreach Proposal"}
+              </>
+            )}
+          </button>
+        </form>
+      )}
+
+      {/* Proposals Listing */}
+      {proposals.length === 0 ? (
+        <div className="py-12 text-center text-slate-555 text-xs italic bg-slate-900/10 border border-slate-850 rounded-2xl">
+          No proposals have been drafted for this lead yet. Click "New Proposal" to create one.
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {proposals.map((proposal) => {
+            const dateStr = new Date(proposal.created_at).toLocaleDateString();
+            
+            // Status colors
+            let badgeStyle = "bg-slate-950 border border-slate-850 text-slate-400";
+            if (proposal.status === "Draft") {
+              badgeStyle = "bg-yellow-500/10 border border-yellow-500/20 text-yellow-400";
+            } else if (proposal.status === "Sent") {
+              badgeStyle = "bg-sky-500/10 border border-sky-500/20 text-sky-400";
+            } else if (proposal.status === "Accepted") {
+              badgeStyle = "bg-emerald-500/10 border border-emerald-500/20 text-emerald-400";
+            } else if (proposal.status === "Declined") {
+              badgeStyle = "bg-rose-500/10 border border-rose-500/20 text-rose-400";
+            }
+
+            return (
+              <div key={proposal.id} className="bg-slate-900/30 border border-slate-850 rounded-2xl p-5 space-y-4 shadow-xl hover:border-slate-800 transition duration-150 relative">
+                <div className="flex justify-between items-start gap-4">
+                  <div className="space-y-1">
+                    <h4 className="font-bold text-slate-200 text-xs">{proposal.title}</h4>
+                    <span className="text-[9px] text-slate-555 block">Created on {dateStr}</span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    {/* Status Toggle Dropdown */}
+                    <select
+                      value={proposal.status}
+                      onChange={(e) => handleQuickStatusChange(proposal, e.target.value)}
+                      className={`text-[10px] font-bold rounded-lg px-2 py-1 outline-none border transition cursor-pointer ${badgeStyle}`}
+                    >
+                      <option value="Draft">Draft</option>
+                      <option value="Sent">Sent</option>
+                      <option value="Accepted">Accepted</option>
+                      <option value="Declined">Declined</option>
+                    </select>
+
+                    {lead.email && (
+                      <button
+                        onClick={() => handleSendViaEmail(proposal)}
+                        className="px-2.5 py-1.5 bg-indigo-650/15 hover:bg-indigo-650/25 border border-indigo-500/20 text-indigo-400 text-[10px] font-bold rounded-lg transition flex items-center gap-1 cursor-pointer"
+                        title="Send via Email"
+                      >
+                        <Send className="w-3 h-3 text-indigo-400" />
+                        Send Email
+                      </button>
+                    )}
+
+                    <button
+                      onClick={() => handleOpenEdit(proposal)}
+                      className="p-1.5 text-slate-455 hover:text-indigo-400 hover:bg-slate-950 rounded-lg transition cursor-pointer"
+                      title="Edit"
+                    >
+                      <FileText className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(proposal.id, proposal.title)}
+                      className="p-1.5 text-slate-455 hover:text-rose-400 hover:bg-slate-950 rounded-lg transition cursor-pointer"
+                      title="Delete"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Services list inside proposal card */}
+                {Array.isArray(proposal.services) && proposal.services.length > 0 && (
+                  <div className="space-y-1.5 pl-2 border-l border-slate-800">
+                    <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest block mb-1">Deliverables Breakdown</span>
+                    {proposal.services.map((item: any, i: number) => (
+                      <div key={i} className="flex justify-between items-center text-[11px] text-slate-350">
+                        <span className="truncate pr-4">• {item.description}</span>
+                        <span className="font-mono text-slate-400 shrink-0">${(item.price || 0).toLocaleString("en-US")}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {proposal.notes && (
+                  <div className="bg-slate-950/20 border border-slate-900/60 p-3 rounded-xl text-[10px] text-slate-450 leading-relaxed italic whitespace-pre-wrap">
+                    {proposal.notes}
+                  </div>
+                )}
+
+                <div className="flex justify-between items-center pt-3 border-t border-slate-850 text-xs">
+                  <span className="font-bold text-slate-550 uppercase tracking-widest text-[9px]">Total Proposal Value:</span>
+                  <span className="font-black text-indigo-300 font-mono text-xs">${(Number(proposal.amount) || 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}</span>
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

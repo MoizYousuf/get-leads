@@ -142,7 +142,7 @@ export function generateEmailHtml(subject: string, bodyText: string, hasLogo = f
             ${
               hasLogo && logoUrl
                 ? `<img src="${logoUrl}" alt="Khanani Innovations" class="logo-img" />`
-                : `<h1 class="logo-text">Khanani <span>Innovations</span></h1>`
+                : `<img src="https://khananiinnovations.com/khanani-logo-white.png" alt="Khanani Innovations" class="logo-img" style="max-height: 56px; object-fit: contain;" />`
             }
           </div>
           <div class="content">

@@ -207,6 +207,7 @@ export default function LeadDetailsPage({ params }: PageProps) {
   const router = useRouter();
   const { id } = use(params);
   const { toast } = useToast();
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   // Data states
   const [lead, setLead] = useState<Lead | null>(null);
@@ -310,6 +311,53 @@ export default function LeadDetailsPage({ params }: PageProps) {
     } finally {
       setIsLoadingAudit(false);
     }
+  };
+
+  const handleScreenshotUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !lead) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast({
+        title: "File Too Large",
+        message: "Please select an image smaller than 2MB.",
+        type: "error"
+      });
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const base64Data = reader.result as string;
+      try {
+        const res = await fetch(`/api/crm/leads/${lead.id}/audit`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ screenshot_url: base64Data })
+        });
+        const result = await res.json();
+        if (!res.ok) {
+          throw new Error(result.error || "Failed to save custom screenshot.");
+        }
+
+        toast({
+          title: "Screenshot Updated",
+          message: "Your custom landing page screenshot has been saved successfully!",
+          type: "success"
+        });
+
+        setAudit((prev: any) => prev ? { ...prev, screenshot_url: base64Data } : null);
+
+      } catch (err: any) {
+        console.error(err);
+        toast({
+          title: "Upload Failed",
+          message: err.message || "Failed to update screenshot.",
+          type: "error"
+        });
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   useEffect(() => {
@@ -1305,18 +1353,35 @@ export default function LeadDetailsPage({ params }: PageProps) {
                                 <div className="w-2.5 h-2.5 rounded-full bg-amber-500/80" />
                                 <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/80" />
                               </div>
-                              <div className="bg-slate-950/60 rounded-lg py-0.5 px-3 text-[9px] font-mono text-slate-500 select-all truncate max-w-[200px] sm:max-w-xs ml-2">
+                              <div className="bg-slate-950/60 rounded-lg py-0.5 px-3 text-[9px] font-mono text-slate-500 select-all truncate max-w-[120px] sm:max-w-xs ml-2">
                                 {lead.website}
                               </div>
-                              <a
-                                href={lead.website.startsWith("http") ? lead.website : `https://${lead.website}`}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="text-slate-500 hover:text-indigo-400 transition"
-                              >
-                                <ExternalLink className="w-3.5 h-3.5" />
-                              </a>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() => fileInputRef.current?.click()}
+                                  className="text-slate-500 hover:text-indigo-400 transition text-[9px] font-bold flex items-center gap-1.5 cursor-pointer bg-slate-950/50 px-2 py-0.5 rounded-md border border-slate-850"
+                                  title="Upload Custom Screenshot"
+                                >
+                                  <Plus className="w-3 h-3 text-indigo-400" />
+                                  Upload
+                                </button>
+                                <a
+                                  href={lead.website.startsWith("http") ? lead.website : `https://${lead.website}`}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="text-slate-500 hover:text-indigo-400 transition"
+                                >
+                                  <ExternalLink className="w-3.5 h-3.5" />
+                                </a>
+                              </div>
                             </div>
+                            <input
+                              type="file"
+                              ref={fileInputRef}
+                              accept="image/*"
+                              onChange={handleScreenshotUpload}
+                              className="hidden"
+                            />
                             {/* Screenshot */}
                             <div className="aspect-video relative overflow-hidden bg-slate-950">
                               <img

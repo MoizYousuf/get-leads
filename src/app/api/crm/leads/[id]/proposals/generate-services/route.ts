@@ -133,11 +133,35 @@ Output the JSON array now:`;
     }
 
     if (!response || !response.ok) {
-      console.error("All Gemini API models failed to generate proposal services:", lastErrorMsg);
-      return NextResponse.json({ 
-        success: false, 
-        error: "Exceeded free tier quotas or rate limits on all Gemini models. Please wait a few seconds and try again." 
-      }, { status: 502 });
+      console.warn("All Gemini API models failed to generate proposal services, falling back to simulated services:", lastErrorMsg);
+      const ind = lead.industry || "local business";
+      const simulatedServices = [
+        {
+          description: `Custom, mobile-friendly Next.js website design and launch optimized for ${ind} services.`,
+          price: 1500
+        },
+        {
+          description: `Local SEO optimization, citations keyword mapping, and Google Business setup in ${lead.city || "your city"}.`,
+          price: 450
+        },
+        {
+          description: `Automated CRM lead notification pipeline (Email/SMS follow-up alerts for new customer bookings).`,
+          price: 650
+        }
+      ];
+
+      if (focus) {
+        simulatedServices.push({
+          description: `Tailored development focus module: ${focus}.`,
+          price: 800
+        });
+      }
+
+      return NextResponse.json({
+        success: true,
+        data: simulatedServices,
+        isSimulated: true
+      });
     }
 
     const resultData = await response.json();
@@ -164,11 +188,35 @@ Output the JSON array now:`;
         data: parsedServices
       });
     } catch (parseError: any) {
-      console.error("Failed to parse Gemini JSON array response:", candidateText, parseError);
+      console.warn("Failed to parse Gemini JSON array response, falling back to simulated services:", candidateText, parseError);
+      const ind = lead.industry || "local business";
+      const simulatedServices = [
+        {
+          description: `Custom, mobile-friendly Next.js website design and launch optimized for ${ind} services.`,
+          price: 1500
+        },
+        {
+          description: `Local SEO optimization, citations keyword mapping, and Google Business setup in ${lead.city || "your city"}.`,
+          price: 450
+        },
+        {
+          description: `Automated CRM lead notification pipeline (Email/SMS follow-up alerts for new customer bookings).`,
+          price: 650
+        }
+      ];
+
+      if (focus) {
+        simulatedServices.push({
+          description: `Tailored development focus focus: ${focus}.`,
+          price: 800
+        });
+      }
+
       return NextResponse.json({
-        success: false,
-        error: "Failed to parse structured service specifications from AI engine. Please retry."
-      }, { status: 502 });
+        success: true,
+        data: simulatedServices,
+        isSimulated: true
+      });
     }
 
   } catch (error: any) {

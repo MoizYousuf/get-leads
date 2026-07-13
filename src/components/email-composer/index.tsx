@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { KHANANI_TEMPLATES } from "@/lib/templates";
 import { supabase } from "@/lib/supabase";
-import { Sparkles, User, Users, Send } from "lucide-react";
+import { Sparkles, User, Users, Send, ExternalLink, CheckCircle } from "lucide-react";
 import SingleModeComposer from "./SingleModeComposer";
 import BulkModeComposer from "./BulkModeComposer";
 import ProgressDisplay from "./ProgressDisplay";
@@ -80,6 +80,8 @@ export default function EmailComposer() {
 
   // Lead ID to associate activity on success
   const leadId = searchParams.get("leadId") || null;
+  const [rightPanelTab, setRightPanelTab] = useState<"preview" | "ai">("preview");
+  const [activeLeadDetails, setActiveLeadDetails] = useState<Recipient | null>(null);
 
   // Check query parameters to pre-populate (e.g. from history page "Send Another" or Lead Finder or CRM)
   useEffect(() => {
@@ -96,18 +98,46 @@ export default function EmailComposer() {
           const parts = draftRecipients.split(",");
           setTo(parts[0]?.trim() || "");
           setClientName(parts[1]?.trim() || "");
+          
+          const recipient: Recipient = {
+            email: parts[0]?.trim() || "",
+            name: parts[1]?.trim() || "",
+            contact_person: parts[2]?.trim() || "",
+            city: parts[3]?.trim() || "",
+            niche: parts[4]?.trim() || "",
+            website: parts[5]?.trim() || "",
+            phone: parts[6]?.trim() || "",
+            industry: parts[4]?.trim() || ""
+          };
+          setActiveLeadDetails(recipient);
+
+          // If custom generated subject and body are supplied, load them directly
+          const customSubject = localStorage.getItem("khanani_outbound_draft_subject");
+          const customBody = localStorage.getItem("khanani_outbound_draft_body");
+          if (customSubject || customBody) {
+            if (customSubject) setSubject(customSubject);
+            if (customBody) setBody(customBody);
+            setRightPanelTab("preview");
+          } else {
+            setRightPanelTab("ai");
+          }
         }
         
         // Cleanup storage
         localStorage.removeItem("khanani_outbound_draft_mode");
         localStorage.removeItem("khanani_outbound_draft_recipients");
+        localStorage.removeItem("khanani_outbound_draft_subject");
+        localStorage.removeItem("khanani_outbound_draft_body");
 
-        // Initialize template
-        const defaultTemplate = KHANANI_TEMPLATES[0];
-        if (defaultTemplate) {
-          setSelectedTemplateId(defaultTemplate.id);
-          setSubject(defaultTemplate.defaultSubject);
-          setBody(defaultTemplate.defaultBody);
+        // Initialize template if no custom pitch was loaded
+        const customSubject = localStorage.getItem("khanani_outbound_draft_subject");
+        if (!customSubject) {
+          const defaultTemplate = KHANANI_TEMPLATES[0];
+          if (defaultTemplate) {
+            setSelectedTemplateId(defaultTemplate.id);
+            setSubject(defaultTemplate.defaultSubject);
+            setBody(defaultTemplate.defaultBody);
+          }
         }
         return;
       }
@@ -548,14 +578,272 @@ export default function EmailComposer() {
         </div>
       </div>
 
-      {/* RIGHT COLUMN: Live Template Preview */}
-      <div className="lg:col-span-5">
-        <TemplatePreview
-          preview={preview}
-          sendMode={sendMode}
-        />
+      {/* RIGHT COLUMN: Preview & AI Assist */}
+      <div className="lg:col-span-5 space-y-4">
+        <div className="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-1 flex items-center gap-1 shadow-inner backdrop-blur-md">
+          <button
+            type="button"
+            onClick={() => setRightPanelTab("preview")}
+            className={`flex-1 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer ${
+              rightPanelTab === "preview"
+                ? "bg-slate-950 text-indigo-400 border border-slate-850"
+                : "text-slate-500 hover:text-slate-350"
+            }`}
+          >
+            <ExternalLink className="w-3.5 h-3.5" />
+            Live Preview
+          </button>
+          <button
+            type="button"
+            onClick={() => setRightPanelTab("ai")}
+            className={`flex-1 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer ${
+              rightPanelTab === "ai"
+                ? "bg-slate-950 text-indigo-400 border border-slate-850"
+                : "text-slate-500 hover:text-slate-350"
+            }`}
+          >
+            <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+            AI Generator
+          </button>
+        </div>
+
+        {rightPanelTab === "preview" ? (
+          <TemplatePreview
+            preview={preview}
+            sendMode={sendMode}
+          />
+        ) : (
+          <AIAssistPanel 
+            activeLead={activeLeadDetails}
+            onApply={(generatedSubject, generatedBody) => {
+              setSubject(generatedSubject);
+              setBody(generatedBody);
+              setRightPanelTab("preview");
+            }}
+          />
+        )}
       </div>
 
+    </div>
+  );
+}
+
+// AI Assist Panel Component for Email Composer
+import { motion, AnimatePresence } from "framer-motion";
+
+interface AIAssistPanelProps {
+  activeLead: Recipient | null;
+  onApply: (subject: string, body: string) => void;
+}
+
+function AIAssistPanel({ activeLead, onApply }: AIAssistPanelProps) {
+  const [name, setName] = useState("");
+  const [industry, setIndustry] = useState("");
+  const [city, setCity] = useState("");
+  const [owner, setOwner] = useState("");
+  const [website, setWebsite] = useState("");
+  const [style, setStyle] = useState("Casual");
+  const [focus, setFocus] = useState("");
+
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [result, setResult] = useState<{ subject: string; body: string } | null>(null);
+  const [errorMsg, setErrorMsg] = useState("");
+  const [isSimulated, setIsSimulated] = useState(false);
+
+  // Sync with activeLead properties when loaded
+  useEffect(() => {
+    if (activeLead) {
+      setName(activeLead.name || "");
+      setIndustry(activeLead.industry || activeLead.niche || "");
+      setCity(activeLead.city || "");
+      setOwner(activeLead.contact_person || "");
+      setWebsite(activeLead.website || "");
+    }
+  }, [activeLead]);
+
+  const handleGenerate = async () => {
+    setIsGenerating(true);
+    setErrorMsg("");
+    setResult(null);
+    setIsSimulated(false);
+
+    try {
+      const res = await fetch("/api/crm/leads/generate-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          industry,
+          city,
+          owner,
+          website,
+          style,
+          focus
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setResult(data.data);
+        setIsSimulated(!!data.data.isSimulated);
+      } else {
+        setErrorMsg(data.error || "Failed to generate pitch.");
+      }
+    } catch (err: any) {
+      console.error(err);
+      setErrorMsg(err.message || "Failed to contact generator service.");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  return (
+    <div className="bg-slate-900/40 border border-slate-800/80 rounded-3xl p-5 shadow-2xl backdrop-blur-md space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-xs font-bold text-slate-100 uppercase tracking-wider flex items-center gap-2">
+          <Sparkles className="w-4 h-4 text-indigo-400" />
+          AI Outreach Pitch Generator
+        </h3>
+        {activeLead && (
+          <span className="text-[9px] font-bold bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 rounded-full text-indigo-400">
+            Lead Loaded
+          </span>
+        )}
+      </div>
+
+      <div className="space-y-3.5">
+        {/* Company Name */}
+        <div className="space-y-1">
+          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Company Name</label>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="e.g. Acme Builders"
+            className="w-full bg-slate-950 border border-slate-850 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none focus:border-indigo-500 transition"
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          {/* Industry */}
+          <div className="space-y-1">
+            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Niche / Industry</label>
+            <input
+              type="text"
+              value={industry}
+              onChange={(e) => setIndustry(e.target.value)}
+              placeholder="e.g. Roofing"
+              className="w-full bg-slate-950 border border-slate-850 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none focus:border-indigo-500 transition"
+            />
+          </div>
+          {/* City */}
+          <div className="space-y-1">
+            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">City</label>
+            <input
+              type="text"
+              value={city}
+              onChange={(e) => setCity(e.target.value)}
+              placeholder="e.g. Miami"
+              className="w-full bg-slate-950 border border-slate-850 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none focus:border-indigo-500 transition"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          {/* Owner */}
+          <div className="space-y-1">
+            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Contact Person</label>
+            <input
+              type="text"
+              value={owner}
+              onChange={(e) => setOwner(e.target.value)}
+              placeholder="e.g. John Doe"
+              className="w-full bg-slate-950 border border-slate-850 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none focus:border-indigo-500 transition"
+            />
+          </div>
+          {/* Tone Style */}
+          <div className="space-y-1">
+            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Tone Style</label>
+            <select
+              value={style}
+              onChange={(e) => setStyle(e.target.value)}
+              className="w-full bg-slate-950 border border-slate-850 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none focus:border-indigo-500 transition cursor-pointer"
+            >
+              <option value="Casual">Casual & Friendly</option>
+              <option value="Professional">Professional Pitch</option>
+              <option value="Direct">Direct & Short</option>
+              <option value="Custom">Custom Hook</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Custom Focus */}
+        <div className="space-y-1">
+          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Outreach Focus / Offer</label>
+          <input
+            type="text"
+            value={focus}
+            onChange={(e) => setFocus(e.target.value)}
+            placeholder="e.g. custom website redesign, commercial roofing offer"
+            className="w-full bg-slate-950 border border-slate-850 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none focus:border-indigo-500 transition"
+          />
+        </div>
+
+        <button
+          type="button"
+          onClick={handleGenerate}
+          disabled={isGenerating || !name}
+          className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-800 disabled:text-slate-500 text-slate-100 font-bold py-2.5 rounded-xl text-xs transition duration-200 cursor-pointer shadow-lg flex items-center justify-center gap-1.5"
+        >
+          {isGenerating ? (
+            <>
+              <div className="w-3.5 h-3.5 border-2 border-slate-500 border-t-white rounded-full animate-spin" />
+              Generating copy...
+            </>
+          ) : (
+            <>
+              <Sparkles className="w-3.5 h-3.5 text-slate-100" />
+              Generate Pitch
+            </>
+          )}
+        </button>
+
+        {/* Error notification */}
+        {errorMsg && (
+          <p className="text-[11px] text-rose-405 bg-rose-500/10 border border-rose-500/20 px-3 py-2 rounded-xl">
+            {errorMsg}
+          </p>
+        )}
+
+        {/* Output Area */}
+        {result && (
+          <div className="space-y-3 pt-3 border-t border-slate-850/80">
+            {isSimulated && (
+              <div className="text-[9px] bg-amber-500/10 border border-amber-500/20 text-amber-400 p-2 rounded-lg leading-relaxed">
+                ⚠️ <strong>GEMINI_API_KEY</strong> is missing from .env. The pitch below is generated using a local high-converting copywriter template. Set up a key in your environment to fetch real AI generation.
+              </div>
+            )}
+            <div className="space-y-1">
+              <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest block">Generated Subject:</span>
+              <p className="text-xs text-slate-200 font-bold bg-slate-950/80 p-2.5 rounded-lg border border-slate-900 leading-tight">
+                {result.subject}
+              </p>
+            </div>
+            <div className="space-y-1">
+              <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest block">Generated Body:</span>
+              <div className="text-xs text-slate-300 bg-slate-950/80 p-2.5 rounded-lg border border-slate-900 font-sans leading-relaxed whitespace-pre-wrap max-h-48 overflow-y-auto scrollbar-thin">
+                {result.body}
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => onApply(result.subject, result.body)}
+              className="w-full bg-emerald-600 hover:bg-emerald-500 text-slate-100 font-black py-2 rounded-xl text-xs transition duration-200 cursor-pointer shadow-md"
+            >
+              Apply Pitch to Composer
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

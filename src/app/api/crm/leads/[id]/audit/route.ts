@@ -72,7 +72,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     }
 
     const cleanUrl = lead.website.trim();
-    const screenshot_url = `https://image.thum.io/get/width/1280/crop/800/${cleanUrl.startsWith("http") ? cleanUrl : "https://" + cleanUrl}`;
+    const screenshot_url = `https://api.microlink.io/?url=${encodeURIComponent(cleanUrl.startsWith("http") ? cleanUrl : "https://" + cleanUrl)}&screenshot=true&embed=screenshot.url`;
     const apiKey = process.env.GEMINI_API_KEY;
 
     let auditData: {

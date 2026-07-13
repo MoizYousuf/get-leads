@@ -20,7 +20,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="h-full antialiased" suppressHydrationWarning>
-      <body className="min-h-full flex flex-col bg-slate-950 text-slate-100" suppressHydrationWarning>
+      <body className="min-h-full flex flex-col bg-slate-50 text-slate-900" suppressHydrationWarning>
         <ToastProvider>
           <HeaderNav />
 
@@ -28,7 +28,7 @@ export default function RootLayout({
             {children}
           </main>
 
-          <footer className="border-t border-slate-900 bg-slate-950 py-6 text-center text-xs text-slate-500">
+          <footer className="border-t border-slate-200 bg-white py-6 text-center text-xs text-slate-550">
             &copy; {new Date().getFullYear()} Khanani Innovations. All rights reserved.
           </footer>
         </ToastProvider>

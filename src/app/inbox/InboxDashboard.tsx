@@ -267,7 +267,7 @@ export default function InboxDashboard() {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => fetchEmails()}
-            className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-750 text-slate-200 border border-slate-700 px-4 py-2.5 rounded-lg text-xs font-semibold cursor-pointer transition-all"
+            className="flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 px-4 py-2.5 rounded-lg text-xs font-semibold cursor-pointer transition-all"
           >
             <RefreshCw className="w-3.5 h-3.5" />
             Refresh
@@ -278,7 +278,7 @@ export default function InboxDashboard() {
             whileTap={{ scale: 0.98 }}
             onClick={simulateIncomingEmail}
             disabled={actionLoading}
-            className="flex items-center gap-1.5 bg-sky-500/10 hover:bg-sky-500/20 text-sky-300 border border-sky-500/30 px-4 py-2.5 rounded-lg text-xs font-semibold cursor-pointer transition-all hover:shadow-[0_0_15px_rgba(14,165,233,0.15)]"
+            className="flex items-center gap-1.5 bg-sky-50 hover:bg-sky-100 text-sky-600 border border-sky-200 px-4 py-2.5 rounded-lg text-xs font-semibold cursor-pointer transition-all"
           >
             <Play className="w-3.5 h-3.5" />
             Simulate Reply
@@ -289,7 +289,7 @@ export default function InboxDashboard() {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={clearAllEmails}
-              className="flex items-center gap-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-300 border border-red-500/30 px-4 py-2.5 rounded-lg text-xs font-semibold cursor-pointer transition-all hover:shadow-[0_0_15px_rgba(239,68,68,0.1)]"
+              className="flex items-center gap-1.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 px-4 py-2.5 rounded-lg text-xs font-semibold cursor-pointer transition-all"
             >
               <Trash2 className="w-3.5 h-3.5" />
               Clear Inbox
@@ -358,21 +358,21 @@ export default function InboxDashboard() {
           </motion.div>
         ) : (
           /* Standard Interactive Grid (with in-place loading transparency) */
-          <div className={`grid grid-cols-1 lg:grid-cols-12 items-stretch min-h-[580px] transition-opacity duration-250 ${loading ? "opacity-60 pointer-events-none" : "opacity-100"}`}>
+          <div className={`grid grid-cols-1 lg:grid-cols-12 items-stretch min-h-[580px] border border-slate-250 rounded-2xl overflow-hidden bg-white shadow-sm transition-opacity duration-250 ${loading ? "opacity-60 pointer-events-none" : "opacity-100"}`}>
             
             {/* Email List Left Panel */}
-            <div className="lg:col-span-5 bg-slate-900/40 border border-slate-800 rounded-xl overflow-hidden flex flex-col h-[580px] backdrop-blur-sm">
-              <div className="p-4 border-b border-slate-800 bg-slate-950/40 flex justify-between items-center">
+            <div className="lg:col-span-5 bg-white border-r border-slate-200 flex flex-col h-[580px]">
+              <div className="p-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
                 <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
                   All Message Threads
                 </span>
-                <span className="text-[10px] bg-slate-950 border border-slate-900 text-sky-400 px-2 py-0.5 rounded font-mono font-bold">
+                <span className="text-[10px] bg-sky-50 border border-sky-100 text-sky-600 px-2 py-0.5 rounded font-mono font-bold">
                   {totalCount} Total
                 </span>
               </div>
 
               {/* Filter & Autocomplete Search Row */}
-              <div className="p-3 bg-slate-950/60 border-b border-slate-800 flex flex-col gap-2 relative z-20">
+              <div className="p-3 bg-slate-50 border-b border-slate-200 flex flex-col gap-2 relative z-20">
                 {/* Search Keywords Input */}
                 <div className="relative">
                   <input
@@ -380,9 +380,9 @@ export default function InboxDashboard() {
                     placeholder="Search subject or body..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    className="w-full bg-slate-900/80 border border-slate-800 focus:border-sky-500/50 rounded-lg py-1.5 pl-8 pr-7 text-xs text-slate-200 placeholder-slate-500 focus:outline-none transition-all"
+                    className="w-full bg-white border border-slate-200 focus:border-sky-500 rounded-lg py-1.5 pl-8 pr-7 text-xs text-slate-800 placeholder-slate-400 focus:outline-none transition-all"
                   />
-                  <span className="absolute left-2.5 top-2 text-slate-500">
+                  <span className="absolute left-2.5 top-2 text-slate-400">
                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                   </span>
                   {search && (
@@ -407,9 +407,9 @@ export default function InboxDashboard() {
                       setShowSenderDropdown(true);
                     }}
                     onFocus={() => setShowSenderDropdown(true)}
-                    className="w-full bg-slate-900/80 border border-slate-800 focus:border-sky-500/50 rounded-lg py-1.5 pl-8 pr-7 text-xs text-slate-200 placeholder-slate-500 focus:outline-none transition-all"
+                    className="w-full bg-white border border-slate-200 focus:border-sky-500 rounded-lg py-1.5 pl-8 pr-7 text-xs text-slate-800 placeholder-slate-400 focus:outline-none transition-all"
                   />
-                  <span className="absolute left-2.5 top-2.5 text-slate-500">
+                  <span className="absolute left-2.5 top-2.5 text-slate-400">
                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
                   </span>
                   {(senderInput || selectedSender) && (
@@ -434,7 +434,7 @@ export default function InboxDashboard() {
                           initial={{ opacity: 0, y: 5 }}
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, y: 5 }}
-                          className="absolute left-0 right-0 top-full mt-1.5 bg-slate-900 border border-slate-800 rounded-lg shadow-2xl z-20 max-h-48 overflow-y-auto divide-y divide-slate-850 scrollbar-thin"
+                          className="absolute left-0 right-0 top-full mt-1.5 bg-white border border-slate-200 rounded-lg shadow-xl z-20 max-h-48 overflow-y-auto divide-y divide-slate-100 scrollbar-thin"
                         >
                           {senders.filter(s => 
                             s.email.toLowerCase().includes(senderInput.toLowerCase()) || 
@@ -457,8 +457,8 @@ export default function InboxDashboard() {
                                 }}
                                 className="w-full text-left p-2.5 text-[11px] hover:bg-slate-850 hover:text-sky-300 transition-colors block cursor-pointer"
                               >
-                                <span className="font-bold text-slate-200 block">{s.name || "Unknown"}</span>
-                                <span className="text-slate-400 block text-[10px] font-mono mt-0.5">{s.email}</span>
+                                <span className="font-bold text-slate-800 block">{s.name || "Unknown"}</span>
+                                <span className="text-slate-500 block text-[10px] font-mono mt-0.5">{s.email}</span>
                               </button>
                             ))
                           )}
@@ -498,10 +498,10 @@ export default function InboxDashboard() {
                         >
                           <button
                             onClick={() => setSelectedEmail(email)}
-                            className={`w-full text-left p-4 transition-all duration-200 flex flex-col gap-2 cursor-pointer relative overflow-hidden ${
+                            className={`w-full text-left p-4 transition-all duration-200 flex flex-col gap-2 cursor-pointer relative overflow-hidden border-b border-slate-100 ${
                               isSelected
-                                ? "bg-sky-500/[0.06] text-sky-200"
-                                : "hover:bg-slate-800/30 text-slate-300"
+                                ? "bg-sky-50/50"
+                                : "hover:bg-slate-50"
                             }`}
                           >
                             {/* Dynamic Active Indicator Stripe */}
@@ -526,17 +526,17 @@ export default function InboxDashboard() {
                             </div>
 
                             <div className="space-y-1">
-                              <h4 className={`text-xs font-bold truncate ${isSelected ? "text-sky-300" : "text-slate-100"}`}>
+                              <h4 className={`text-xs font-bold truncate ${isSelected ? "text-sky-700" : "text-slate-800"}`}>
                                 {email.subject}
                               </h4>
-                              <p className="text-[11px] text-slate-400 line-clamp-2 leading-relaxed font-medium">
+                              <p className="text-[11px] text-slate-500 line-clamp-2 leading-relaxed font-medium">
                                 {email.text || "No preview content available."}
                               </p>
                             </div>
 
-                            <div className="flex justify-between items-center text-[9px] text-slate-500 border-t border-slate-850/50 pt-2 mt-1">
+                            <div className="flex justify-between items-center text-[9px] text-slate-450 border-t border-slate-100 pt-2 mt-1">
                               <span className="font-mono truncate max-w-[170px]">{email.from}</span>
-                              <div className="flex items-center gap-0.5 text-sky-400 font-bold">
+                              <div className="flex items-center gap-0.5 text-sky-600 font-bold">
                                 View Thread <ChevronRight className="w-3 h-3" />
                               </div>
                             </div>
@@ -550,15 +550,15 @@ export default function InboxDashboard() {
 
               {/* Backend-controlled Pagination Footer */}
               {totalPages > 1 && (
-                <div className="p-3 border-t border-slate-800 bg-slate-950/40 flex justify-between items-center text-xs">
-                  <span className="text-slate-400 text-[10px]">
-                    Page <span className="font-bold text-slate-250">{page}</span> of <span className="font-bold text-slate-250">{totalPages}</span>
+                <div className="p-3 border-t border-slate-100 bg-slate-50 flex justify-between items-center text-xs">
+                  <span className="text-slate-500 text-[10px]">
+                    Page <span className="font-bold text-slate-800">{page}</span> of <span className="font-bold text-slate-800">{totalPages}</span>
                   </span>
                   <div className="flex gap-1">
                     <button
                       disabled={page === 1}
                       onClick={() => handlePageChange(page - 1)}
-                      className="px-2 py-1 rounded bg-slate-850 hover:bg-slate-800 border border-slate-800 text-slate-300 disabled:opacity-40 disabled:hover:bg-slate-850 cursor-pointer disabled:cursor-not-allowed text-[10px] font-semibold transition-all"
+                      className="px-2 py-1 rounded bg-white hover:bg-slate-50 border border-slate-200 text-slate-600 disabled:opacity-40 disabled:hover:bg-white cursor-pointer disabled:cursor-not-allowed text-[10px] font-semibold transition-all"
                     >
                       Prev
                     </button>
@@ -570,9 +570,9 @@ export default function InboxDashboard() {
                           key={pageNum}
                           onClick={() => handlePageChange(pageNum)}
                           className={`w-6 h-6 rounded flex items-center justify-center font-bold text-[10px] transition-all cursor-pointer ${
-                            isActive 
-                              ? "bg-sky-500 text-white shadow-[0_2px_8px_rgba(14,165,233,0.3)]" 
-                              : "bg-slate-850 hover:bg-slate-800 text-slate-355 border border-slate-800"
+                             isActive 
+                              ? "bg-sky-500 text-white shadow-sm" 
+                              : "bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200"
                           }`}
                         >
                           {pageNum}
@@ -582,7 +582,7 @@ export default function InboxDashboard() {
                     <button
                       disabled={page === totalPages}
                       onClick={() => handlePageChange(page + 1)}
-                      className="px-2 py-1 rounded bg-slate-850 hover:bg-slate-800 border border-slate-800 text-slate-300 disabled:opacity-40 disabled:hover:bg-slate-850 cursor-pointer disabled:cursor-not-allowed text-[10px] font-semibold transition-all"
+                      className="px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 disabled:opacity-40 disabled:hover:bg-slate-100 cursor-pointer disabled:cursor-not-allowed text-[10px] font-semibold transition-all"
                     >
                       Next
                     </button>
@@ -592,7 +592,7 @@ export default function InboxDashboard() {
             </div>
 
             {/* Email Details View Right Panel */}
-            <div className="lg:col-span-7 bg-slate-900/25 border-l border-slate-800 flex flex-col h-[580px] overflow-hidden">
+            <div className="lg:col-span-7 bg-white flex flex-col h-[580px] overflow-hidden">
               <AnimatePresence mode="wait">
                 {selectedEmail ? (
                   <motion.div
@@ -604,15 +604,15 @@ export default function InboxDashboard() {
                     className="flex flex-col h-full overflow-hidden"
                   >
                     {/* Detail Panel Header */}
-                    <div className="p-6 border-b border-slate-800 bg-slate-950/20 flex flex-col md:flex-row justify-between md:items-center gap-4 shrink-0">
+                    <div className="p-6 border-b border-slate-200 bg-slate-50 flex flex-col md:flex-row justify-between md:items-center gap-4 shrink-0">
                       <div className="min-w-0">
-                        <h2 className="font-bold text-slate-200 text-base truncate">
+                        <h2 className="font-bold text-slate-800 text-base truncate">
                           {selectedEmail.subject}
                         </h2>
-                        <div className="flex flex-wrap gap-x-4 gap-y-1.5 mt-2 text-xs text-slate-400 items-center">
+                        <div className="flex flex-wrap gap-x-4 gap-y-1.5 mt-2 text-xs text-slate-500 items-center">
                           <div className="flex items-center gap-1">
-                            <span className="font-medium text-slate-500">From:</span>
-                            <span className="text-slate-200 font-bold">
+                            <span className="font-medium text-slate-450">From:</span>
+                            <span className="text-slate-800 font-bold">
                               {selectedEmail.fromName ? `${selectedEmail.fromName} <${selectedEmail.from}>` : selectedEmail.from}
                             </span>
                           </div>
@@ -643,26 +643,26 @@ export default function InboxDashboard() {
                     </div>
 
                     {/* Metadata Subheader bar */}
-                    <div className="px-6 py-3 bg-slate-950/30 border-b border-slate-850/60 flex justify-between items-center text-[10px] text-slate-500 shrink-0">
+                    <div className="px-6 py-3 bg-slate-50 border-b border-slate-200 flex justify-between items-center text-[10px] text-slate-550 shrink-0">
                       <div className="flex items-center gap-1 font-mono">
-                        <Clock className="w-3 h-3" />
+                        <Clock className="w-3 h-3 text-slate-400" />
                         <span>Received: {new Date(selectedEmail.date).toLocaleString()}</span>
                       </div>
-                      <span className="bg-slate-900 border border-slate-850 px-2 py-0.5 rounded text-slate-400 font-bold">
+                      <span className="bg-slate-100 border border-slate-200 px-2 py-0.5 rounded text-slate-500 font-bold">
                         ID: {selectedEmail.id}
                       </span>
                     </div>
 
                     {/* Email Content Body */}
-                    <div className="flex-1 p-6 overflow-y-auto bg-slate-950/20 scrollbar-thin">
+                    <div className="flex-1 p-6 overflow-y-auto bg-white scrollbar-thin">
                       {selectedEmail.html ? (
                         // In a production app, we would sanitize the HTML. We display this inside a clean, light-mode background card for maximum readability (as HTML emails are styled for white backgrounds).
                         <div 
-                          className="email-html-body text-slate-900 text-sm leading-relaxed font-sans bg-white p-6 rounded-xl border border-slate-200/80 shadow-md overflow-x-auto"
+                          className="email-html-body text-slate-900 text-sm leading-relaxed font-sans bg-white p-6 rounded-xl border border-slate-250 shadow-sm overflow-x-auto"
                           dangerouslySetInnerHTML={{ __html: selectedEmail.html }}
                         />
                       ) : (
-                        <div className="text-slate-300 text-sm leading-relaxed whitespace-pre-wrap font-sans bg-slate-950/40 p-5 rounded-xl border border-slate-850 shadow-inner">
+                        <div className="text-slate-700 text-sm leading-relaxed whitespace-pre-wrap font-sans bg-slate-50 p-5 rounded-xl border border-slate-200 shadow-sm">
                           {selectedEmail.text || "No email body present."}
                         </div>
                       )}
@@ -670,11 +670,11 @@ export default function InboxDashboard() {
 
                   </motion.div>
                 ) : (
-                  <div className="flex flex-col items-center justify-center h-full text-center p-8">
-                    <div className="w-14 h-14 bg-slate-900 border border-slate-850 rounded-full flex items-center justify-center text-slate-600 mb-3">
-                      <MailOpen className="w-6 h-6 text-slate-500" />
+                  <div className="flex flex-col items-center justify-center h-full text-center p-8 bg-slate-50">
+                    <div className="w-14 h-14 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-400 mb-3 shadow-sm">
+                      <MailOpen className="w-6 h-6 text-slate-400" />
                     </div>
-                    <h4 className="font-bold text-slate-300 text-sm">No Thread Selected</h4>
+                    <h4 className="font-bold text-slate-800 text-sm">No Thread Selected</h4>
                     <p className="text-slate-500 text-xs mt-1 leading-relaxed">
                       Select an email thread from the left list to read its content.
                     </p>

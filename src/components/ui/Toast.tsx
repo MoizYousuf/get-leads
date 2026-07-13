@@ -58,12 +58,12 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                 animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
                 exit={{ opacity: 0, scale: 0.85, filter: "blur(4px)", transition: { duration: 0.2 } }}
                 transition={{ type: "spring", stiffness: 350, damping: 25 }}
-                className={`pointer-events-auto w-full border backdrop-blur-md rounded-2xl p-4 shadow-[0_10px_30px_rgba(0,0,0,0.4)] flex items-start gap-3 relative overflow-hidden ${
+                className={`pointer-events-auto w-full border backdrop-blur-md rounded-2xl p-4 shadow-lg flex items-start gap-3 relative overflow-hidden ${
                   isSuccess
-                    ? "bg-emerald-950/80 border-emerald-500/20 text-emerald-200"
+                    ? "bg-white border-emerald-200 text-emerald-800"
                     : isError
-                    ? "bg-rose-950/80 border-rose-500/20 text-rose-200"
-                    : "bg-slate-900/80 border-slate-800 text-slate-200"
+                    ? "bg-white border-rose-200 text-rose-800"
+                    : "bg-white border-slate-200 text-slate-800"
                 }`}
               >
                 {/* Visual Glow Indicator */}

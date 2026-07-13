@@ -39,7 +39,11 @@ function seededRandom(str: string) {
   };
 }
 
-export function findLeads(query: string, websiteFilter: "all" | "with-website" | "without-website" = "all"): Lead[] {
+export function findLeads(
+  query: string, 
+  websiteFilter: "all" | "with-website" | "without-website" = "all",
+  start: number = 0
+): Lead[] {
   const cleanQuery = query.toLowerCase().trim();
   if (!cleanQuery) return [];
 
@@ -56,8 +60,8 @@ export function findLeads(query: string, websiteFilter: "all" | "with-website" |
     }
   }
 
-  // Create seeded random number generator based on query + city to keep results consistent for identical searches
-  const rnd = seededRandom(industry + "_" + city.toLowerCase());
+  // Create seeded random number generator based on query + city + start to keep results unique per page
+  const rnd = seededRandom(industry + "_" + city.toLowerCase() + "_" + start);
   
   const getRndElement = <T>(arr: T[]): T => arr[Math.floor(rnd() * arr.length)];
 
@@ -102,7 +106,7 @@ export function findLeads(query: string, websiteFilter: "all" | "with-website" |
     const phone = `(${areaCode}) ${prefix}-${line}`;
 
     const lead: Lead = {
-      id: `lead_${cleanCompany}_${i}_${Math.floor(rnd() * 1000)}`,
+      id: `lead_${cleanCompany}_${start}_${i}_${Math.floor(rnd() * 1000)}`,
       name: companyName,
       owner: ownerName,
       email,
@@ -110,7 +114,7 @@ export function findLeads(query: string, websiteFilter: "all" | "with-website" |
       website,
       industry: industry.charAt(0).toUpperCase() + industry.slice(1),
       city: city.charAt(0).toUpperCase() + city.slice(1),
-      placeId: `mock_place_${i}`,
+      placeId: `mock_place_${start}_${i}`,
       address: `${Math.floor(rnd() * 999) + 1} Main St, ${city.charAt(0).toUpperCase() + city.slice(1)}`
     };
 

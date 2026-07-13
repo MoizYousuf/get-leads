@@ -390,7 +390,7 @@ export default function LeadsDashboard() {
         
         if (result.fallback) {
           setIsFallback(true);
-          setToastMessage("Using simulated database (SERPAPI_API_KEY missing)");
+          setToastMessage(result.error || "Using simulated database (SERPAPI_API_KEY missing)");
           setShowToast(true);
           setTimeout(() => setShowToast(false), 5000);
         }
@@ -741,6 +741,32 @@ export default function LeadsDashboard() {
     router.push("/");
   };
 
+  const handleComposeEmailForLead = (lead: any) => {
+    try {
+      localStorage.setItem("khanani_outbound_draft_to", lead.email || "");
+      localStorage.setItem("khanani_outbound_draft_client_name", lead.name || "");
+      localStorage.setItem("khanani_outbound_draft_contact_person", lead.owner || "");
+      localStorage.setItem("khanani_outbound_draft_city", lead.city || "");
+      localStorage.setItem("khanani_outbound_draft_industry", lead.industry || "");
+      localStorage.setItem("khanani_outbound_draft_website", lead.website || "");
+      localStorage.setItem("khanani_outbound_draft_phone", lead.phone || "");
+      localStorage.setItem("khanani_outbound_draft_mode", "single");
+      localStorage.setItem("khanani_outbound_draft_lead_id", lead.id);
+    } catch (e) {
+      console.error(e);
+    }
+    
+    const qTo = encodeURIComponent(lead.email || "");
+    const qName = encodeURIComponent(lead.name || "");
+    const qOwner = encodeURIComponent(lead.owner || "");
+    const qCity = encodeURIComponent(lead.city || "");
+    const qIndustry = encodeURIComponent(lead.industry || "");
+    const qWebsite = encodeURIComponent(lead.website || "");
+    const qPhone = encodeURIComponent(lead.phone || "");
+    
+    router.push(`/?to=${qTo}&clientName=${qName}&contact_person=${qOwner}&city=${qCity}&industry=${qIndustry}&website=${qWebsite}&phone=${qPhone}&leadId=${lead.id}`);
+  };
+
   const handleImportToCRM = async () => {
     if (selectedLeadIds.size === 0) return;
 
@@ -960,7 +986,7 @@ export default function LeadsDashboard() {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: -8, scale: 0.96 }}
                     transition={{ duration: 0.15, ease: "easeOut" }}
-                    className="absolute left-0 mt-1.5 w-full bg-slate-950/95 border border-slate-850 rounded-xl overflow-hidden shadow-2xl z-25 backdrop-blur-md max-h-60 overflow-y-auto scrollbar-thin"
+                    className="absolute left-0 mt-1.5 w-full bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xl z-25 max-h-60 overflow-y-auto scrollbar-thin"
                   >
                     {["All", ...(CITIES_BY_COUNTRY[country] || [])].map((c) => (
                       <button
@@ -970,7 +996,7 @@ export default function LeadsDashboard() {
                           setCity(c);
                           setCityOpen(false);
                         }}
-                        className={`w-full text-left px-4 py-2.5 text-xs font-semibold transition-all hover:bg-sky-500/10 hover:text-sky-300 block cursor-pointer ${c === city ? "bg-sky-500/15 text-sky-300 border-l-2 border-l-sky-500" : "text-slate-300"}`}
+                        className={`w-full text-left px-4 py-2.5 text-xs font-semibold transition-all hover:bg-sky-50 hover:text-sky-700 block cursor-pointer ${c === city ? "bg-sky-50 text-sky-700 border-l-2 border-l-sky-500" : "text-slate-700"}`}
                       >
                         {c}
                       </button>
@@ -982,8 +1008,8 @@ export default function LeadsDashboard() {
 
             {/* Country */}
             <div className="md:col-span-3 relative custom-dropdown-container">
-              <label className="block text-[10px] font-bold text-sky-400/90 uppercase tracking-widest mb-2.5 flex items-center gap-1.5">
-                <Globe className="w-3.5 h-3.5" />
+              <label className="block text-[10px] font-bold text-sky-600 uppercase tracking-widest mb-2.5 flex items-center gap-1.5">
+                <Globe className="w-3.5 h-3.5 text-sky-500" />
                 Country
               </label>
               <button
@@ -992,10 +1018,10 @@ export default function LeadsDashboard() {
                   setCountryOpen(!countryOpen);
                   setCityOpen(false);
                 }}
-                className="w-full flex items-center justify-between bg-slate-950/60 border border-slate-850 hover:border-slate-700/80 focus:border-sky-500/50 focus:ring-4 focus:ring-sky-500/10 rounded-xl px-4 py-3.5 text-sm text-slate-100 outline-none transition-all duration-300 cursor-pointer"
+                className="w-full flex items-center justify-between bg-white border border-slate-200 hover:border-slate-300 focus:border-sky-500 rounded-xl px-4 py-3.5 text-sm text-slate-750 outline-none transition-all duration-300 cursor-pointer"
               >
                 <span>{country}</span>
-                <ChevronDown className={`w-4 h-4 text-sky-400/70 transition-transform duration-300 ${countryOpen ? "rotate-180 text-sky-400" : ""}`} />
+                <ChevronDown className={`w-4 h-4 text-sky-500/70 transition-transform duration-300 ${countryOpen ? "rotate-180 text-sky-500" : ""}`} />
               </button>
               
               <AnimatePresence>
@@ -1005,7 +1031,7 @@ export default function LeadsDashboard() {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: -8, scale: 0.96 }}
                     transition={{ duration: 0.15, ease: "easeOut" }}
-                    className="absolute left-0 mt-1.5 w-full bg-slate-950/95 border border-slate-850 rounded-xl overflow-hidden shadow-2xl z-25 backdrop-blur-md max-h-60 overflow-y-auto scrollbar-thin"
+                    className="absolute left-0 mt-1.5 w-full bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xl z-25 max-h-60 overflow-y-auto scrollbar-thin"
                   >
                     {["All", ...Object.keys(CITIES_BY_COUNTRY)].map((cty) => (
                       <button
@@ -1015,7 +1041,7 @@ export default function LeadsDashboard() {
                           setCountry(cty);
                           setCountryOpen(false);
                         }}
-                        className={`w-full text-left px-4 py-2.5 text-xs font-semibold transition-all hover:bg-sky-500/10 hover:text-sky-300 block cursor-pointer ${cty === country ? "bg-sky-500/15 text-sky-300 border-l-2 border-l-sky-500" : "text-slate-300"}`}
+                        className={`w-full text-left px-4 py-2.5 text-xs font-semibold transition-all hover:bg-sky-50 hover:text-sky-700 block cursor-pointer ${cty === country ? "bg-sky-50 text-sky-700 border-l-2 border-l-sky-500" : "text-slate-700"}`}
                       >
                         {cty}
                       </button>
@@ -1298,9 +1324,9 @@ export default function LeadsDashboard() {
                 </div>
 
                 {/* Thicker Animated Progress Bar Track */}
-                <div className="w-full bg-slate-950 border border-slate-800 rounded-full h-4 overflow-hidden mb-3.5 shadow-inner">
+                <div className="w-full bg-slate-100 border border-slate-200 rounded-full h-4 overflow-hidden mb-3.5 shadow-inner">
                   <div
-                    className="bg-gradient-to-r from-sky-500 via-indigo-500 to-sky-500 h-full rounded-full transition-all duration-300 shadow-[0_0_15px_rgba(56,189,248,0.4)] relative animated-progress-stripes"
+                    className="bg-sky-500 bg-gradient-to-r from-sky-500 via-indigo-500 to-sky-500 h-full rounded-full transition-all duration-300 shadow-sm relative animated-progress-stripes"
                     style={{ 
                       width: `${Math.max((autoFindProgress / autoFindTotal) * 100, 3)}%`,
                       backgroundSize: '30px 30px'
@@ -1394,7 +1420,7 @@ export default function LeadsDashboard() {
                 })()}
                 <button
                   onClick={handleExportToOutreach}
-                  className="bg-gradient-to-r from-sky-500 to-indigo-500 hover:from-sky-400 hover:to-indigo-400 text-slate-950 font-bold px-4.5 py-2.5 rounded-xl text-xs transition-all shadow-[0_4px_12px_rgba(14,165,233,0.25)] hover:shadow-[0_4px_16px_rgba(14,165,233,0.4)] flex items-center justify-center gap-1.5 cursor-pointer md:shrink-0 hover:-translate-y-[1px] active:scale-[0.98]"
+                  className="bg-gradient-to-r from-sky-500 to-indigo-500 hover:from-sky-400 hover:to-indigo-400 text-white font-bold px-4.5 py-2.5 rounded-xl text-xs transition-all shadow-[0_4px_12px_rgba(14,165,233,0.25)] hover:shadow-[0_4px_16px_rgba(14,165,233,0.4)] flex items-center justify-center gap-1.5 cursor-pointer md:shrink-0 hover:-translate-y-[1px] active:scale-[0.98]"
                 >
                   Send Bulk Outreach ({selectedLeadIds.size})
                   <ArrowRight className="w-3.5 h-3.5" />
@@ -1458,7 +1484,7 @@ export default function LeadsDashboard() {
                         <div className="flex items-center gap-2">
                           <span>{lead.name}</span>
                           {(lead as any).isImported && (
-                            <span className="text-[9px] font-black uppercase tracking-wider bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-2 py-0.5 rounded-full flex items-center gap-1 animate-pulse">
+                            <span className="text-[9px] font-black uppercase tracking-wider bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-2 py-0.5 rounded-full flex items-center gap-1 animate-pulse whitespace-nowrap shrink-0">
                               <CheckCircle className="w-2.5 h-2.5 text-indigo-400 stroke-[3]" />
                               Saved to CRM
                             </span>
@@ -1503,8 +1529,18 @@ export default function LeadsDashboard() {
                           ) : lead.email ? (
                             <>
                               <div className="flex items-center gap-1.5 group/email">
-                                <Mail className="w-3.5 h-3.5 text-sky-400/50 shrink-0" />
-                                <span className="font-semibold text-slate-200">{lead.email}</span>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleComposeEmailForLead(lead);
+                                  }}
+                                  className="flex items-center gap-1.5 cursor-pointer text-slate-200 hover:text-sky-400 transition-colors"
+                                  title="Compose email for this lead"
+                                >
+                                  <Mail className="w-3.5 h-3.5 text-sky-500 shrink-0 group-hover/email:scale-110 transition-transform" />
+                                  <span className="font-semibold">{lead.email}</span>
+                                </button>
                                 
                                 <div className="flex items-center gap-1 ml-1.5">
                                   <button
@@ -1607,7 +1643,7 @@ export default function LeadsDashboard() {
                                         setEditingLeadId(lead.id);
                                         setEditingEmailValue("");
                                       }}
-                                      className="text-slate-400 hover:text-slate-200 hover:bg-slate-900 px-2 py-1 rounded text-[10px] font-bold transition-all cursor-pointer hover:scale-105"
+                                      className="text-slate-500 hover:text-slate-800 hover:bg-slate-100 px-2 py-1 rounded text-[10px] font-bold transition-all cursor-pointer hover:scale-105"
                                     >
                                       Add
                                     </button>
@@ -1663,7 +1699,7 @@ export default function LeadsDashboard() {
                             <ExternalLink className="w-2.5 h-2.5" />
                           </a>
                         ) : (
-                          <span className="text-red-400/80 bg-red-500/10 border border-red-500/10 px-2 py-0.5 rounded text-[10px] font-semibold">
+                          <span className="text-red-400/80 bg-red-500/10 border border-red-500/10 px-2 py-0.5 rounded text-[10px] font-semibold whitespace-nowrap inline-block shrink-0">
                             No Website
                           </span>
                         )}

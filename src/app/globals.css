@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f8fafc;
+  --foreground: #0f172a;
 }
 
 @theme inline {
@@ -10,22 +10,263 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* Light Theme Slate Mapping overrides */
+  --color-slate-50: #f8fafc;
+  --color-slate-100: #f1f5f9;
+  --color-slate-200: #e2e8f0;
+  --color-slate-300: #cbd5e1;
+  --color-slate-400: #94a3b8;
+  --color-slate-505: #64748b;
+  --color-slate-500: #64748b;
+  --color-slate-600: #475569;
+  --color-slate-700: #334155;
+  --color-slate-800: #1e293b;
+  --color-slate-850: #1e293b;
+  --color-slate-900: #0f172a;
+  --color-slate-950: #020617;
 }
 
 /* Site-wide scaling/zoom boost */
 html {
-  font-size: 19px; /* Boost base size from browser default 16px to scale up all rem/text sizes proportionally */
+  font-size: 16.5px;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* =======================================================
+   UI/UX PRO MAX LIGHT THEME UTILITY COMPATIBILITY LAYER
+   ======================================================= */
+
+/* 1. Global backgrounds */
+.bg-slate-950 {
+  background-color: #f8fafc !important;
+}
+.bg-slate-900 {
+  background-color: #ffffff !important;
+}
+.bg-slate-955 {
+  background-color: #f1f5f9 !important;
+}
+.bg-slate-905 {
+  background-color: #f1f5f9 !important;
+}
+.bg-slate-850 {
+  background-color: #f8fafc !important;
+}
+.bg-slate-800 {
+  background-color: #f1f5f9 !important;
+}
+
+/* Wildcard background overrides for transparent slates (e.g. bg-slate-900/35, bg-slate-950/40) */
+[class*="bg-slate-900/"],
+[class*="bg-slate-950/"],
+[class*="bg-slate-955/"] {
+  background-color: rgba(255, 255, 255, 0.75) !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+/* Specific background resets for dark gradients (headers) */
+[class*="bg-gradient-to-br from-slate-900"],
+[class*="from-slate-900"],
+[class*="via-slate-950"],
+[class*="to-slate-900"] {
+  background-image: none !important;
+  background-color: #ffffff !important;
+}
+
+/* 2. Glassmorphism and transparent overlays */
+.bg-slate-950\/60,
+.bg-slate-900\/60,
+.bg-slate-950\/40,
+.bg-slate-900\/20,
+.bg-slate-950\/45,
+.bg-slate-955\/40,
+.bg-slate-900\/10,
+.bg-slate-950\/80,
+.bg-slate-900\/40,
+.bg-slate-900\/35 {
+  background-color: rgba(255, 255, 255, 0.85) !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+/* Accent badges & cards */
+.bg-indigo-500\/10,
+.bg-indigo-600\/10,
+.bg-indigo-950\/40 {
+  background-color: #e0e7ff !important;
+}
+.bg-sky-500\/10,
+.bg-sky-500\/5,
+.bg-sky-500\/15 {
+  background-color: #e0f2fe !important;
+}
+.bg-purple-500\/10 {
+  background-color: #f3e8ff !important;
+}
+.bg-rose-500\/10 {
+  background-color: #ffe4e6 !important;
+}
+.bg-emerald-500\/10 {
+  background-color: #d1fae5 !important;
+}
+.bg-amber-500\/10 {
+  background-color: #fef3c7 !important;
+}
+.bg-pink-500\/10 {
+  background-color: #fce7f3 !important;
+}
+.bg-yellow-500\/10 {
+  background-color: #fef9c3 !important;
+}
+.bg-teal-500\/10 {
+  background-color: #ccfbf1 !important;
+}
+
+/* 3. Text colors & legibility */
+.text-slate-100,
+.text-slate-50 {
+  color: #0f172a !important;
+}
+.text-slate-200 {
+  color: #1e293b !important;
+}
+.text-slate-300,
+.text-slate-350 {
+  color: #334155 !important;
+}
+.text-slate-400,
+.text-slate-500,
+.text-slate-505,
+.text-slate-555,
+.text-slate-650 {
+  color: #64748b !important;
+}
+
+/* Accent typography */
+.text-indigo-400 {
+  color: #4f46e5 !important;
+}
+.text-sky-400 {
+  color: #0284c7 !important;
+}
+.text-purple-400 {
+  color: #7c3aed !important;
+}
+.text-rose-400 {
+  color: #e11d48 !important;
+}
+.text-rose-455 {
+  color: #e11d48 !important;
+}
+.text-emerald-400 {
+  color: #059669 !important;
+}
+.text-amber-400 {
+  color: #d97706 !important;
+}
+.text-pink-400 {
+  color: #db2777 !important;
+}
+.text-yellow-400 {
+  color: #ca8a04 !important;
+}
+.text-teal-400 {
+  color: #0d9488 !important;
+}
+
+/* 4. Borders */
+.border-slate-900,
+.border-slate-950 {
+  border-color: #f1f5f9 !important;
+}
+.border-slate-850,
+.border-slate-855 {
+  border-color: #e2e8f0 !important;
+}
+.border-slate-800 {
+  border-color: #cbd5e1 !important;
+}
+.border-slate-750,
+.border-slate-700 {
+  border-color: #94a3b8 !important;
+}
+
+/* Accent borders */
+.border-indigo-500\/20,
+.border-sky-500\/20,
+.border-sky-500\/15 {
+  border-color: #c7d2fe !important;
+}
+.border-rose-500\/20 {
+  border-color: #fecdd3 !important;
+}
+.border-emerald-500\/20 {
+  border-color: #a7f3d0 !important;
+}
+
+/* 5. Inputs & Form Elements */
+input, select, textarea {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: #6366f1 !important;
+  outline: none !important;
+}
+
+/* Placeholders */
+::placeholder {
+  color: #94a3b8 !important;
+  opacity: 1; /* Firefox */
+}
+
+/* Soft shadows for cards */
+.shadow-2xl {
+  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.04), 0 8px 10px -6px rgba(15, 23, 42, 0.04) !important;
+}
+
+/* Ensure all colored action buttons and badges retain white text regardless of slate text overrides */
+.bg-indigo-600,
+.bg-indigo-550,
+.bg-indigo-505,
+.bg-indigo-500,
+.bg-emerald-600,
+.bg-emerald-500,
+.bg-rose-600,
+.bg-rose-500,
+.bg-sky-600,
+.bg-sky-500,
+.bg-violet-600,
+.bg-violet-505,
+.bg-violet-500 {
+  color: #ffffff !important;
+}
+
+.bg-indigo-600 *,
+.bg-indigo-550 *,
+.bg-indigo-505 *,
+.bg-indigo-500 *,
+.bg-emerald-600 *,
+.bg-emerald-500 *,
+.bg-rose-600 *,
+.bg-rose-500 *,
+.bg-sky-600 *,
+.bg-sky-500 *,
+.bg-violet-600 *,
+.bg-violet-505 *,
+.bg-violet-500 * {
+  color: #ffffff !important;
+}
+
+/* Premium email header styling that bypasses slate light theme rules */
+.email-header-premium {
+  background: linear-gradient(135deg, #0b0f19 0%, #171d2d 100%) !important;
+  border: 1px solid #0b0f19 !important;
 }

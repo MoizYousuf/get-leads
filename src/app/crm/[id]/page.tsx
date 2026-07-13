@@ -77,17 +77,17 @@ const CRM_STATUSES = [
 ];
 
 const STATUS_COLORS: Record<string, string> = {
-  New: "bg-slate-500/10 text-slate-400 border-slate-500/20",
-  Researching: "bg-purple-500/10 text-purple-400 border-purple-500/20",
-  Qualified: "bg-blue-500/10 text-blue-400 border-blue-500/20",
-  Contacted: "bg-amber-500/10 text-amber-400 border-amber-500/20",
-  "Email Opened": "bg-sky-500/10 text-sky-400 border-sky-500/20",
-  Replied: "bg-pink-500/10 text-pink-400 border-pink-500/20",
-  Meeting: "bg-yellow-500/10 text-yellow-400 border-yellow-500/20",
-  Proposal: "bg-teal-500/10 text-teal-400 border-teal-500/20",
-  Negotiation: "bg-indigo-500/10 text-indigo-400 border-indigo-500/20",
-  Won: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
-  Lost: "bg-rose-500/10 text-rose-400 border-rose-500/20"
+  New: "bg-slate-50 text-slate-655 border border-slate-200",
+  Researching: "bg-purple-50 text-purple-700 border border-purple-100",
+  Qualified: "bg-blue-50 text-blue-700 border border-blue-100",
+  Contacted: "bg-amber-50 text-amber-700 border border-amber-100",
+  "Email Opened": "bg-sky-50 text-sky-700 border border-sky-100",
+  Replied: "bg-pink-50 text-pink-700 border border-pink-100",
+  Meeting: "bg-yellow-50 text-yellow-750 border border-yellow-100",
+  Proposal: "bg-teal-50 text-teal-700 border border-teal-100",
+  Negotiation: "bg-indigo-50 text-indigo-700 border border-indigo-100",
+  Won: "bg-emerald-50 text-emerald-700 border border-emerald-100",
+  Lost: "bg-rose-50 text-rose-700 border border-rose-100"
 };
 
 const formatTaskDueDate = (dateStr: string) => {
@@ -160,9 +160,9 @@ const formatTimelineTime = (dateStr: string) => {
 };
 
 const scoreColor = (score: number) => {
-  if (score >= 90) return "text-emerald-400 stroke-emerald-400";
-  if (score >= 70) return "text-amber-400 stroke-amber-400";
-  return "text-rose-400 stroke-rose-400";
+  if (score >= 90) return "text-emerald-600 stroke-emerald-500";
+  if (score >= 70) return "text-amber-600 stroke-amber-500";
+  return "text-rose-600 stroke-rose-500";
 };
 
 const ScoreRing = ({ score, label }: { score: number; label: string }) => {
@@ -177,7 +177,7 @@ const ScoreRing = ({ score, label }: { score: number; label: string }) => {
       <div className="relative flex items-center justify-center">
         <svg height={radius * 2} width={radius * 2} className="transform -rotate-90">
           <circle
-            stroke="rgba(30, 41, 59, 0.5)"
+            stroke="rgba(226, 232, 240, 0.8)"
             fill="transparent"
             strokeWidth={stroke}
             r={normalizedRadius}
@@ -196,7 +196,7 @@ const ScoreRing = ({ score, label }: { score: number; label: string }) => {
             cy={radius}
           />
         </svg>
-        <span className="absolute text-[11px] font-black text-slate-100">{score}</span>
+        <span className="absolute text-[11px] font-black text-slate-800">{score}</span>
       </div>
       <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{label}</span>
     </div>
@@ -747,14 +747,26 @@ export default function LeadDetailsPage({ params }: PageProps) {
   // Direct to Email Composer
   const handleSendEmailRedirect = () => {
     if (!lead) return;
-    // Format recipient string for EmailComposer
-    // Format: email, name, owner, city, niche, website, phone
-    const csvContent = `${lead.email || ""},${lead.name},${lead.owner || ""},${lead.city || ""},${lead.industry || ""},${lead.website || ""},${lead.phone || ""}`;
     
-    localStorage.setItem("khanani_outbound_draft_recipients", csvContent);
+    localStorage.setItem("khanani_outbound_draft_to", lead.email || "");
+    localStorage.setItem("khanani_outbound_draft_client_name", lead.name || "");
+    localStorage.setItem("khanani_outbound_draft_contact_person", lead.owner || "");
+    localStorage.setItem("khanani_outbound_draft_city", lead.city || "");
+    localStorage.setItem("khanani_outbound_draft_industry", lead.industry || "");
+    localStorage.setItem("khanani_outbound_draft_website", lead.website || "");
+    localStorage.setItem("khanani_outbound_draft_phone", lead.phone || "");
     localStorage.setItem("khanani_outbound_draft_mode", "single");
-    // Route to composer, passing leadId so it can log activity after send
-    router.push(`/?leadId=${lead.id}`);
+    localStorage.setItem("khanani_outbound_draft_lead_id", lead.id);
+
+    const qTo = encodeURIComponent(lead.email || "");
+    const qName = encodeURIComponent(lead.name || "");
+    const qOwner = encodeURIComponent(lead.owner || "");
+    const qCity = encodeURIComponent(lead.city || "");
+    const qIndustry = encodeURIComponent(lead.industry || "");
+    const qWebsite = encodeURIComponent(lead.website || "");
+    const qPhone = encodeURIComponent(lead.phone || "");
+    
+    router.push(`/?to=${qTo}&clientName=${qName}&contact_person=${qOwner}&city=${qCity}&industry=${qIndustry}&website=${qWebsite}&phone=${qPhone}&leadId=${lead.id}`);
   };
 
   const handleDeleteLead = async () => {
@@ -846,12 +858,12 @@ export default function LeadDetailsPage({ params }: PageProps) {
           <div className="space-y-4">
             {/* Header info */}
             <div>
-              <div className="flex items-center flex-wrap gap-2 text-[10px] font-bold text-sky-400 uppercase tracking-widest">
+              <div className="flex items-center flex-wrap gap-2 text-[10px] font-bold text-indigo-600 uppercase tracking-widest">
                 <span>{lead.industry}</span>
-                <span className="text-slate-650">•</span>
+                <span className="text-slate-400">•</span>
                 <span>{lead.city}</span>
               </div>
-              <h1 className="text-2xl font-black text-slate-100 mt-1 flex items-center gap-2">
+              <h1 className="text-2xl font-black text-slate-800 mt-1 flex items-center gap-2">
                 {lead.name}
               </h1>
               {lead.address && (
@@ -867,7 +879,7 @@ export default function LeadDetailsPage({ params }: PageProps) {
               {lead.tags.map((tag, idx) => (
                 <span
                   key={idx}
-                  className="bg-slate-900/80 border border-slate-800 text-[10px] text-slate-350 px-2 py-0.5 rounded-md flex items-center gap-1"
+                  className="bg-slate-100 border border-slate-200 text-[10px] text-slate-600 px-2 py-0.5 rounded-md flex items-center gap-1"
                 >
                   <Tag className="w-2.5 h-2.5 text-indigo-400" />
                   {tag}
@@ -888,7 +900,7 @@ export default function LeadDetailsPage({ params }: PageProps) {
                   placeholder="+ Tag"
                   value={newTagInput}
                   onChange={e => setNewTagInput(e.target.value)}
-                  className="bg-slate-950 border border-slate-850 hover:border-slate-800 focus:border-indigo-500 text-[9px] font-bold text-slate-300 px-2 py-0.5 w-16 rounded focus:outline-none transition duration-200"
+                  className="bg-white border border-slate-200 hover:border-indigo-300 focus:border-indigo-500 text-[9px] font-bold text-slate-600 px-2 py-0.5 w-16 rounded focus:outline-none transition duration-200"
                 />
               </form>
             </div>
@@ -917,9 +929,9 @@ export default function LeadDetailsPage({ params }: PageProps) {
             {lead.email ? (
               <button
                 onClick={handleSendEmailRedirect}
-                className="w-full py-3 bg-gradient-to-r from-sky-500 to-indigo-500 hover:from-sky-400 hover:to-indigo-400 text-xs font-black text-slate-950 rounded-xl transition hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-1.5 shadow-lg cursor-pointer"
+                className="w-full py-3 bg-gradient-to-r from-sky-500 to-indigo-500 hover:from-sky-400 hover:to-indigo-400 text-xs font-black text-white rounded-xl transition hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-1.5 shadow-lg cursor-pointer"
               >
-                <Send className="w-3.5 h-3.5 text-slate-950 stroke-[2.5]" />
+                <Send className="w-3.5 h-3.5 text-white stroke-[2.5]" />
                 Send Outreach Email
               </button>
             ) : (
@@ -1688,12 +1700,17 @@ function AIPitchGeneratorWidget({ lead }: AIPitchGeneratorWidgetProps) {
   const handleApplyAndLoad = () => {
     if (!result) return;
     
-    // Save generated details to localStorage
-    const csvContent = `${lead.email || ""},${lead.name},${lead.owner || ""},${lead.city || ""},${lead.industry || ""},${lead.website || ""},${lead.phone || ""}`;
-    localStorage.setItem("khanani_outbound_draft_recipients", csvContent);
+    localStorage.setItem("khanani_outbound_draft_to", lead.email || "");
+    localStorage.setItem("khanani_outbound_draft_client_name", lead.name || "");
+    localStorage.setItem("khanani_outbound_draft_contact_person", lead.owner || "");
+    localStorage.setItem("khanani_outbound_draft_city", lead.city || "");
+    localStorage.setItem("khanani_outbound_draft_industry", lead.industry || "");
+    localStorage.setItem("khanani_outbound_draft_website", lead.website || "");
+    localStorage.setItem("khanani_outbound_draft_phone", lead.phone || "");
     localStorage.setItem("khanani_outbound_draft_mode", "single");
     localStorage.setItem("khanani_outbound_draft_subject", result.subject);
     localStorage.setItem("khanani_outbound_draft_body", result.body);
+    localStorage.setItem("khanani_outbound_draft_lead_id", lead.id);
 
     toast({
       title: "Pitch Loaded",
@@ -1701,8 +1718,17 @@ function AIPitchGeneratorWidget({ lead }: AIPitchGeneratorWidgetProps) {
       type: "success"
     });
 
-    // Redirect to main outreach page with leadId parameter
-    router.push(`/?leadId=${lead.id}`);
+    const qTo = encodeURIComponent(lead.email || "");
+    const qName = encodeURIComponent(lead.name || "");
+    const qOwner = encodeURIComponent(lead.owner || "");
+    const qCity = encodeURIComponent(lead.city || "");
+    const qIndustry = encodeURIComponent(lead.industry || "");
+    const qWebsite = encodeURIComponent(lead.website || "");
+    const qPhone = encodeURIComponent(lead.phone || "");
+    const qSubject = encodeURIComponent(result.subject);
+    const qBody = encodeURIComponent(result.body);
+
+    router.push(`/?to=${qTo}&clientName=${qName}&contact_person=${qOwner}&city=${qCity}&industry=${qIndustry}&website=${qWebsite}&phone=${qPhone}&subject=${qSubject}&body=${qBody}&leadId=${lead.id}`);
   };
 
   return (
@@ -2060,7 +2086,17 @@ function ProposalsManagerWidget({ lead, proposals, onRefresh }: ProposalsManager
       type: "success"
     });
 
-    router.push(`/?leadId=${lead.id}`);
+    const qTo = encodeURIComponent(lead.email || "");
+    const qName = encodeURIComponent(lead.name || "");
+    const qOwner = encodeURIComponent(lead.owner || "");
+    const qCity = encodeURIComponent(lead.city || "");
+    const qIndustry = encodeURIComponent(lead.industry || "");
+    const qWebsite = encodeURIComponent(lead.website || "");
+    const qPhone = encodeURIComponent(lead.phone || "");
+    const qSubject = encodeURIComponent(`Proposal: ${proposal.title} - Khanani Innovations`);
+    const qBody = encodeURIComponent(emailBody);
+
+    router.push(`/?to=${qTo}&clientName=${qName}&contact_person=${qOwner}&city=${qCity}&industry=${qIndustry}&website=${qWebsite}&phone=${qPhone}&subject=${qSubject}&body=${qBody}&leadId=${lead.id}&proposalId=${proposal.id}`);
   };
 
   // Totals calculations

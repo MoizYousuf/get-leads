@@ -122,12 +122,13 @@ export async function GET(req: NextRequest) {
       finalQuery = `businesses in ${finalQuery}`;
     }
 
+    const offset = parseInt(start);
     const apiKey = process.env.SERPAPI_API_KEY;
 
     // Fallback if SerpApi Key is missing
     if (!apiKey) {
       console.log("SerpApi API key missing, falling back to mock leads database.");
-      const mockLeads = getMockLeads(finalQuery, filter as any);
+      const mockLeads = getMockLeads(finalQuery, filter as any, offset);
       const leadsWithCRMStatus = await appendCRMStatus(mockLeads);
       return NextResponse.json({
         success: true,
@@ -137,7 +138,6 @@ export async function GET(req: NextRequest) {
     }
 
     // If filtering for website-less leads on the initial page, fetch 3 pages in parallel (60 listings) to maximize results
-    const offset = parseInt(start);
     const fetchPage = async (pageOffset: number) => {
       const url = `https://serpapi.com/search.json?engine=google_maps&q=${encodeURIComponent(finalQuery)}&type=search&start=${pageOffset}&api_key=${apiKey}`;
       const res = await fetch(url);
@@ -261,7 +261,9 @@ export async function GET(req: NextRequest) {
     // Fall back to mock on server failure as well
     const query = new URL(req.url).searchParams.get("q") || "";
     const filter = new URL(req.url).searchParams.get("filter") || "all";
-    const mockLeads = getMockLeads(query, filter as any);
+    const start = new URL(req.url).searchParams.get("start") || "0";
+    const offset = parseInt(start);
+    const mockLeads = getMockLeads(query, filter as any, offset);
     const leadsWithCRMStatus = await appendCRMStatus(mockLeads);
     
     return NextResponse.json({

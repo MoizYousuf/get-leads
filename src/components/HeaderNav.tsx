@@ -36,21 +36,21 @@ export default function HeaderNav() {
 
   return (
     <>
-      <header className="border-b border-slate-900 bg-slate-950/60 backdrop-blur-lg sticky top-0 z-50 transition-all duration-300">
+      <header className="border-b border-slate-150 bg-white/70 backdrop-blur-lg sticky top-0 z-50 transition-all duration-300">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
           
           {/* Logo and Brand */}
           <Link href="/" className="flex items-center gap-2.5 group transition-transform duration-200 hover:scale-[1.01]">
             <div className="relative flex items-center justify-center">
-              <div className="absolute -inset-1 bg-gradient-to-r from-sky-500 to-indigo-500 rounded-lg blur opacity-15 group-hover:opacity-35 transition-opacity duration-300"></div>
+              <div className="absolute -inset-1 bg-gradient-to-r from-sky-500 to-indigo-500 rounded-lg blur opacity-5 group-hover:opacity-15 transition-opacity duration-300"></div>
               <img 
-                src="/logo/khanani-logo-white.png" 
+                src="/logo/khanani-logo.png" 
                 alt="Khanani Innovations" 
-                className="h-8 w-auto object-contain brightness-110 relative z-10 transition-transform duration-300 group-hover:rotate-2"
+                className="h-8 w-auto object-contain relative z-10 transition-transform duration-300 group-hover:rotate-2"
               />
             </div>
             <div className="flex items-center gap-1.5 ml-0.5 max-sm:hidden">
-              <span className="text-[10px] bg-sky-500/10 text-sky-400 border border-sky-500/15 px-2 py-0.5 rounded-full font-bold tracking-wide flex items-center gap-1 animate-pulse">
+              <span className="text-[10px] bg-sky-100 text-sky-600 border border-sky-150 px-2 py-0.5 rounded-full font-bold tracking-wide flex items-center gap-1">
                 <Sparkles className="w-2.5 h-2.5" />
                 Lead Sender
               </span>
@@ -69,16 +69,16 @@ export default function HeaderNav() {
                   href={item.href}
                   className={`relative px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-300 flex items-center gap-1.5 cursor-pointer select-none ${
                     isActive 
-                      ? "text-sky-300 bg-sky-500/10 border border-sky-500/20 shadow-[0_0_15px_rgba(56,189,248,0.08)]"
-                      : "text-slate-400 hover:text-slate-200 hover:bg-slate-900/50 border border-transparent"
+                      ? "text-sky-600 bg-sky-50 border border-sky-100 shadow-[0_2px_8px_rgba(14,165,233,0.04)]"
+                      : "text-slate-500 hover:text-slate-800 hover:bg-slate-100/60 border border-transparent"
                   }`}
                 >
-                  <Icon className={`w-3.5 h-3.5 transition-transform duration-300 ${isActive ? "text-sky-400 scale-110" : "text-slate-500"}`} />
+                  <Icon className={`w-3.5 h-3.5 transition-transform duration-300 ${isActive ? "text-sky-500 scale-110" : "text-slate-400"}`} />
                   <span className="max-sm:hidden">{item.label}</span>
                   
                   {/* Active Indicator Underline */}
                   {isActive && (
-                    <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4 h-[2px] bg-gradient-to-r from-sky-400 to-indigo-400 rounded-full shadow-[0_0_8px_#38bdf8]" />
+                    <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4 h-[2px] bg-gradient-to-r from-sky-400 to-indigo-400 rounded-full shadow-sm" />
                   )}
                 </Link>
               );
@@ -89,7 +89,7 @@ export default function HeaderNav() {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => setShowPlaybook(true)}
-              className="ml-2 flex items-center gap-1.5 bg-gradient-to-r from-sky-500/10 to-indigo-500/10 hover:from-sky-500/20 hover:to-indigo-500/20 text-sky-400 border border-sky-500/20 px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-all hover:shadow-[0_0_15px_rgba(14,165,233,0.1)] shrink-0"
+              className="ml-2 flex items-center gap-1.5 bg-sky-50 hover:bg-sky-100 text-sky-600 border border-sky-100 px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-all hover:shadow-sm shrink-0"
             >
               <BookOpen className="w-3.5 h-3.5" />
               <span className="max-sm:hidden">Playbook</span>
@@ -109,7 +109,7 @@ export default function HeaderNav() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setShowPlaybook(false)}
-              className="fixed inset-0 bg-slate-950/80 backdrop-blur-md"
+              className="fixed inset-0 bg-slate-900/40 backdrop-blur-md"
             />
 
             {/* Content Container */}
@@ -118,27 +118,27 @@ export default function HeaderNav() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 15 }}
               transition={{ type: "spring", stiffness: 350, damping: 28 }}
-              className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-3xl shadow-2xl relative overflow-hidden flex flex-col max-h-[90vh] z-10"
+              className="bg-white border border-slate-150 rounded-2xl w-full max-w-3xl shadow-2xl relative overflow-hidden flex flex-col max-h-[90vh] z-10"
             >
               {/* Header */}
-              <div className="p-6 border-b border-slate-800 bg-slate-950/40 flex items-center justify-between">
+              <div className="p-6 border-b border-slate-150 bg-slate-50 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <BookOpen className="w-5 h-5 text-sky-400" />
+                  <BookOpen className="w-5 h-5 text-sky-600" />
                   <div>
-                    <h3 className="font-bold text-slate-100 text-sm">Khanani Innovations Client Playbook</h3>
-                    <p className="text-slate-400 text-[10px] mt-0.5">Your complete pipeline guide to landing paying clients step-by-step.</p>
+                    <h3 className="font-bold text-slate-800 text-sm">Khanani Innovations Client Playbook</h3>
+                    <p className="text-slate-500 text-[10px] mt-0.5">Your complete pipeline guide to landing paying clients step-by-step.</p>
                   </div>
                 </div>
                 <button
                   onClick={() => setShowPlaybook(false)}
-                  className="p-1 rounded-lg bg-slate-900 hover:bg-slate-850 border border-slate-800 text-slate-400 hover:text-slate-200 cursor-pointer"
+                  className="p-1 rounded-lg bg-white hover:bg-slate-50 border border-slate-200 text-slate-400 hover:text-slate-600 cursor-pointer"
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
 
               {/* Sub-Tabs Selector */}
-              <div className="px-6 py-3 border-b border-slate-850/60 bg-slate-900/60 flex gap-1.5 overflow-x-auto shrink-0 scrollbar-none">
+              <div className="px-6 py-3 border-b border-slate-150/60 bg-slate-50/50 flex gap-1.5 overflow-x-auto shrink-0 scrollbar-none">
                 {[
                   { id: "leads", label: "1. Find Prospects", icon: Building2 },
                   { id: "outreach", label: "2. Cold Pitch", icon: Send },
@@ -154,7 +154,7 @@ export default function HeaderNav() {
                       className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
                         isSelected 
                           ? "bg-sky-500 text-white shadow-md shadow-sky-500/10" 
-                          : "bg-slate-850 hover:bg-slate-800 text-slate-400 border border-slate-800/80"
+                          : "bg-white hover:bg-slate-100 text-slate-500 border border-slate-200"
                       }`}
                     >
                       <Icon className="w-3.5 h-3.5" />
@@ -165,30 +165,30 @@ export default function HeaderNav() {
               </div>
 
               {/* Tab Contents Panel */}
-              <div className="p-6 overflow-y-auto space-y-5 text-sm leading-relaxed text-slate-300">
+              <div className="p-6 overflow-y-auto space-y-5 text-sm leading-relaxed text-slate-600">
                 {playbookTab === "leads" && (
                   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-                    <h4 className="font-bold text-slate-100 flex items-center gap-1.5 text-xs uppercase tracking-wider text-sky-400">
+                    <h4 className="font-bold flex items-center gap-1.5 text-xs uppercase tracking-wider text-sky-600">
                       <TrendingUp className="w-4 h-4" /> Step 1: Finding High-Quality Leads
                     </h4>
                     <p>
                       The key to getting web design clients is targeting local businesses that are currently <strong>invisible online</strong> (they have no website listed on Google Maps).
                     </p>
-                    <div className="bg-slate-950/40 p-4 rounded-xl border border-slate-850 space-y-3">
+                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-150 space-y-3">
                       <div className="flex gap-2">
-                        <CheckCircle className="w-4 h-4 text-sky-400 shrink-0 mt-0.5" />
+                        <CheckCircle className="w-4 h-4 text-sky-500 shrink-0 mt-0.5" />
                         <span>Go to the <strong>Lead Finder</strong> tab.</span>
                       </div>
                       <div className="flex gap-2">
-                        <CheckCircle className="w-4 h-4 text-sky-400 shrink-0 mt-0.5" />
+                        <CheckCircle className="w-4 h-4 text-sky-500 shrink-0 mt-0.5" />
                         <span>Search by keyword & city (e.g. <code>Roofing Contractor in Miami</code> or <code>Dentist in New York</code>).</span>
                       </div>
                       <div className="flex gap-2">
-                        <CheckCircle className="w-4 h-4 text-sky-400 shrink-0 mt-0.5" />
+                        <CheckCircle className="w-4 h-4 text-sky-500 shrink-0 mt-0.5" />
                         <span>Filter the results by selecting <strong>Without Website</strong>. These are your hot prospects! They need a site immediately to build local authority.</span>
                       </div>
                       <div className="flex gap-2">
-                        <CheckCircle className="w-4 h-4 text-sky-400 shrink-0 mt-0.5" />
+                        <CheckCircle className="w-4 h-4 text-sky-500 shrink-0 mt-0.5" />
                         <span>Click the blue envelope <strong>Send Email</strong> icon on any lead to instantly import them into the composer.</span>
                       </div>
                     </div>
@@ -197,30 +197,30 @@ export default function HeaderNav() {
 
                 {playbookTab === "outreach" && (
                   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-                    <h4 className="font-bold text-slate-100 flex items-center gap-1.5 text-xs uppercase tracking-wider text-sky-400">
+                    <h4 className="font-bold flex items-center gap-1.5 text-xs uppercase tracking-wider text-sky-600">
                       <Send className="w-4 h-4" /> Step 2: The First Outreach Email (Cold Pitch)
                     </h4>
                     <p>
                       When sending your first outreach email, keep the pitch direct, short, and benefit-focused. Here is exactly what is pre-loaded:
                     </p>
-                    <div className="bg-slate-950/40 p-4 rounded-xl border border-slate-850 space-y-2.5">
-                      <div className="text-xs font-bold text-slate-400">Recommended Template: Website Creation Proposal</div>
-                      <div className="text-xs text-sky-300 font-mono">Subject: Building a professional website for [Business Name] - Khanani Innovations</div>
-                      <div className="text-xs border-t border-slate-850/60 pt-2.5 text-slate-350 italic space-y-2">
+                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-150 space-y-2.5">
+                      <div className="text-xs font-bold text-slate-500">Recommended Template: Website Creation Proposal</div>
+                      <div className="text-xs text-sky-600 font-mono">Subject: Building a professional website for [Business Name] - Khanani Innovations</div>
+                      <div className="text-xs border-t border-slate-200 pt-2.5 text-slate-600 italic space-y-2">
                         <p>"I noticed that your business is currently operating without an active website.</p>
-                        <p>At Khanani Innovations (<a href="https://khananiinnovations.com" target="_blank" className="text-sky-400 underline">khananiinnovations.com</a>), we build clean, modern, and mobile-friendly websites designed to attract local clients. We can set up a beautiful landing page, contact forms, and lead collection workflows for [Business Name] in just a few days.</p>
+                        <p>At Khanani Innovations (<a href="https://khananiinnovations.com" target="_blank" className="text-sky-600 underline">khananiinnovations.com</a>), we build clean, modern, and mobile-friendly websites designed to attract local clients. We can set up a beautiful landing page, contact forms, and lead collection workflows for [Business Name] in just a few days.</p>
                         <p>Would you be open to a quick, complimentary discussion about how we can establish your online presence?"</p>
                       </div>
                     </div>
-                    <div className="bg-sky-500/5 p-4 rounded-xl border border-sky-500/15 text-xs text-sky-200">
-                      <strong>💡 Playbook Tip:</strong> Mentioning your website link (<a href="https://khananiinnovations.com" target="_blank" className="underline font-bold">khananiinnovations.com</a>) inside the email is critical. Leads will visit your site to review your portfolio before replying. It establishes instant authority and credibility.
+                    <div className="bg-sky-50 p-4 rounded-xl border border-sky-100 text-xs text-sky-700">
+                      <strong>💡 Playbook Tip:</strong> Mentioning your website link (<a href="https://khananiinnovations.com" target="_blank" className="underline font-bold text-sky-600">khananiinnovations.com</a>) inside the email is critical. Leads will visit your site to review your portfolio before replying. It establishes instant authority and credibility.
                     </div>
                   </motion.div>
                 )}
 
                 {playbookTab === "replies" && (
                   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-                    <h4 className="font-bold text-slate-100 flex items-center gap-1.5 text-xs uppercase tracking-wider text-sky-400">
+                    <h4 className="font-bold flex items-center gap-1.5 text-xs uppercase tracking-wider text-sky-600">
                       <MessageSquare className="w-4 h-4" /> Step 3: Handling Email Responses (What to Reply Now)
                     </h4>
                     <p>
@@ -229,25 +229,25 @@ export default function HeaderNav() {
                     
                     <div className="space-y-3">
                       {/* Q1 */}
-                      <div className="bg-slate-950/45 p-4 rounded-xl border border-slate-850">
-                        <span className="text-xs font-bold text-red-300 block">Scenario A: The Lead asks: "How much does it cost?"</span>
-                        <div className="text-xs text-slate-300 mt-2 bg-slate-900 p-3 rounded-lg border border-slate-800 italic">
+                      <div className="bg-slate-50 p-4 rounded-xl border border-slate-150">
+                        <span className="text-xs font-bold text-rose-600 block">Scenario A: The Lead asks: "How much does it cost?"</span>
+                        <div className="text-xs text-slate-600 mt-2 bg-white p-3 rounded-lg border border-slate-200 italic">
                           "Our custom website creation starts at $1,200 for a fully optimized, responsive landing page with contact forms and automated lead capture hooks. However, we customize our pricing based on your needs. Let's hop on a quick 10-minute complimentary video call this week so I can show you a custom draft for your business. Does Thursday at 2 PM EST work?"
                         </div>
                       </div>
 
                       {/* Q2 */}
-                      <div className="bg-slate-950/45 p-4 rounded-xl border border-slate-850">
-                        <span className="text-xs font-bold text-amber-300 block">Scenario B: The Lead asks: "Can I see your past portfolio?"</span>
-                        <div className="text-xs text-slate-300 mt-2 bg-slate-900 p-3 rounded-lg border border-slate-800 italic">
-                          "Absolutely! You can review our latest premium designs and active client platforms directly on our website: <a href="https://khananiinnovations.com" target="_blank" className="text-sky-400 underline font-bold">https://khananiinnovations.com</a>. We specialize in high-performance web systems. Let me know when you are free to discuss building a custom layout tailored for you!"
+                      <div className="bg-slate-50 p-4 rounded-xl border border-slate-150">
+                        <span className="text-xs font-bold text-amber-600 block">Scenario B: The Lead asks: "Can I see your past portfolio?"</span>
+                        <div className="text-xs text-slate-600 mt-2 bg-white p-3 rounded-lg border border-slate-200 italic">
+                          "Absolutely! You can review our latest premium designs and active client platforms directly on our website: <a href="https://khananiinnovations.com" target="_blank" className="text-sky-600 underline font-bold">https://khananiinnovations.com</a>. We specialize in high-performance web systems. Let me know when you are free to discuss building a custom layout tailored for you!"
                         </div>
                       </div>
 
                       {/* Q3 */}
-                      <div className="bg-slate-950/45 p-4 rounded-xl border border-slate-850">
-                        <span className="text-xs font-bold text-emerald-300 block">Scenario C: The Lead says: "Yes, I am open to a discussion."</span>
-                        <div className="text-xs text-slate-300 mt-2 bg-slate-900 p-3 rounded-lg border border-slate-800 italic">
+                      <div className="bg-slate-50 p-4 rounded-xl border border-slate-150">
+                        <span className="text-xs font-bold text-emerald-600 block">Scenario C: The Lead says: "Yes, I am open to a discussion."</span>
+                        <div className="text-xs text-slate-600 mt-2 bg-white p-3 rounded-lg border border-slate-200 italic">
                           "Great to hear! You can pick a slot directly on my booking calendar: [Insert Calendly Link] or let me know if Thursday afternoon works for you. I will prepare a complimentary local competitor audit to show you where you are currently losing search rankings."
                         </div>
                       </div>
@@ -257,23 +257,23 @@ export default function HeaderNav() {
 
                 {playbookTab === "closing" && (
                   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-                    <h4 className="font-bold text-slate-100 flex items-center gap-1.5 text-xs uppercase tracking-wider text-sky-400">
+                    <h4 className="font-bold flex items-center gap-1.5 text-xs uppercase tracking-wider text-sky-600">
                       <DollarSign className="w-4 h-4" /> Step 4: Closing the Client & Project Pricing
                     </h4>
                     <p>
                       Follow this flow to close the deal during your introductory meeting:
                     </p>
-                    <div className="bg-slate-950/40 p-4 rounded-xl border border-slate-850 space-y-3.5">
+                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-150 space-y-3.5">
                       <div className="flex gap-2">
-                        <span className="w-5 h-5 bg-sky-500/10 text-sky-400 font-bold flex items-center justify-center rounded text-[10px] shrink-0 mt-0.5">1</span>
+                        <span className="w-5 h-5 bg-sky-100 text-sky-600 font-bold flex items-center justify-center rounded text-[10px] shrink-0 mt-0.5">1</span>
                         <span><strong>Perform a Local Audit:</strong> Show them how their competitors are winning Google search traffic. Explain how a website acts as a 24/7 customer capture pipeline.</span>
                       </div>
                       <div className="flex gap-2">
-                        <span className="w-5 h-5 bg-sky-500/10 text-sky-400 font-bold flex items-center justify-center rounded text-[10px] shrink-0 mt-0.5">2</span>
+                        <span className="w-5 h-5 bg-sky-100 text-sky-600 font-bold flex items-center justify-center rounded text-[10px] shrink-0 mt-0.5">2</span>
                         <span><strong>Propose the Scope:</strong> Offer a standard 3-page site (Home, Services, Contact Form). Pitch it for $1,200 - $1,500.</span>
                       </div>
                       <div className="flex gap-2">
-                        <span className="w-5 h-5 bg-sky-500/10 text-sky-400 font-bold flex items-center justify-center rounded text-[10px] shrink-0 mt-0.5">3</span>
+                        <span className="w-5 h-5 bg-sky-100 text-sky-600 font-bold flex items-center justify-center rounded text-[10px] shrink-0 mt-0.5">3</span>
                         <span><strong>Secure the Deal:</strong> Send a clean project invoice using standard tools (like Stripe or PayPal). Always request <strong>50% upfront deposit</strong> before starting development, and 50% upon final sign-off.</span>
                       </div>
                     </div>
@@ -282,9 +282,9 @@ export default function HeaderNav() {
               </div>
 
               {/* Footer */}
-              <div className="p-4 border-t border-slate-800 bg-slate-950/40 text-center text-xs text-slate-500 flex justify-between items-center px-6">
+              <div className="p-4 border-t border-slate-150 bg-slate-50 text-center text-xs text-slate-500 flex justify-between items-center px-6">
                 <span>&copy; {new Date().getFullYear()} Khanani Innovations</span>
-                <span className="text-[10px] bg-slate-900 border border-slate-850 text-sky-400 px-2 py-0.5 rounded font-mono font-bold">
+                <span className="text-[10px] bg-white border border-slate-200 text-sky-600 px-2 py-0.5 rounded font-mono font-bold">
                   khananiinnovations.com
                 </span>
               </div>

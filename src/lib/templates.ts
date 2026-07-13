@@ -92,29 +92,30 @@ export function generateEmailHtml(subject: string, bodyText: string, hasLogo = f
             border: 1px solid #f3f4f6;
           }
           .header {
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-            padding: 30px 40px;
+            background-color: #ffffff;
+            padding: 32px 24px;
             text-align: center;
+            border-b: 1px solid #f3f4f6;
           }
           .logo-text {
             font-size: 24px;
             font-weight: 800;
             letter-spacing: -0.025em;
-            color: #ffffff;
+            color: #111827;
             margin: 0;
           }
           .logo-text span {
-            color: #38bdf8;
+            color: #4f46e5;
           }
           .logo-img {
-            max-height: 50px;
+            max-height: 80px;
             width: auto;
             display: inline-block;
           }
           .content {
             padding: 40px;
-            font-size: 16px;
-            line-height: 1.65;
+            font-size: 15px;
+            line-height: 1.7;
             color: #374151;
           }
           .footer {
@@ -122,17 +123,17 @@ export function generateEmailHtml(subject: string, bodyText: string, hasLogo = f
             padding: 24px 40px;
             text-align: center;
             border-top: 1px solid #f3f4f6;
-            font-size: 13px;
+            font-size: 12px;
             color: #6b7280;
           }
           .footer a {
-            color: #3b82f6;
+            color: #4f46e5;
             text-decoration: none;
           }
           .divider {
             height: 1px;
-            background-color: #e5e7eb;
-            margin: 24px 0;
+            background-color: #f3f4f6;
+            margin: 28px 0;
           }
         </style>
       </head>
@@ -142,17 +143,24 @@ export function generateEmailHtml(subject: string, bodyText: string, hasLogo = f
             ${
               hasLogo && logoUrl
                 ? `<img src="${logoUrl}" alt="Khanani Innovations" class="logo-img" />`
-                : `<img src="https://khananiinnovations.com/khanani-logo-white.png" alt="Khanani Innovations" class="logo-img" style="max-height: 56px; object-fit: contain;" />`
+                : `<img src="https://khananiinnovations.com/khanani-logo.png" alt="Khanani Innovations" class="logo-img" style="max-height: 80px; object-fit: contain;" />`
             }
           </div>
           <div class="content">
             ${formattedBody}
+            <div style="text-align: center; margin: 36px 0 28px 0;">
+              <a href="https://khananiinnovations.com" target="_blank" style="background: linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%); color: #ffffff !important; padding: 12px 28px; border-radius: 8px; text-decoration: none; font-size: 11px; font-weight: bold; letter-spacing: 0.05em; text-transform: uppercase; display: inline-block; box-shadow: 0 4px 10px rgba(79, 70, 229, 0.2);">
+                Schedule a Complimentary Strategy Call
+              </a>
+            </div>
             <div class="divider"></div>
-            <p style="margin: 0; font-size: 14px; font-weight: 600; color: #111827;">Best regards,</p>
-            <p style="margin: 4px 0 0 0; font-size: 14px; color: #4b5563;"><a href="https://khananiinnovations.com" target="_blank" style="color: #4b5563; text-decoration: none;">Khanani Innovations Team</a></p>
+            <p style="margin: 0; font-size: 13px; font-weight: 500; color: #6b7280;">Best regards,</p>
+            <p style="margin: 6px 0 2px 0; font-size: 14px; font-weight: 800; color: #4f46e5;">Khanani Innovations Team</p>
+            <p style="margin: 0; font-size: 10px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.05em;">Web Development & Automation Solutions</p>
+            <p style="margin: 6px 0 0 0; font-size: 12px; font-weight: 600; color: #0284c7;"><a href="https://khananiinnovations.com" target="_blank" style="color: #0284c7; text-decoration: none;">khananiinnovations.com</a></p>
           </div>
           <div class="footer">
-            <p style="margin: 0 0 8px 0;">&copy; ${new Date().getFullYear()} <a href="https://khananiinnovations.com" target="_blank" style="color: #3b82f6; text-decoration: none;">Khanani Innovations</a>. All rights reserved.</p>
+            <p style="margin: 0 0 8px 0;">&copy; ${new Date().getFullYear()} <a href="https://khananiinnovations.com" target="_blank" style="color: #4f46e5; text-decoration: none;">Khanani Innovations</a>. All rights reserved.</p>
             <p style="margin: 0;">You are receiving this email as business outreach. If you prefer not to receive further emails, please reply with "Unsubscribe".</p>
           </div>
         </div>

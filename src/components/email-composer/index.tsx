@@ -89,14 +89,36 @@ export default function EmailComposer() {
 
   // Check query parameters to pre-populate (e.g. from history page "Send Another" or Lead Finder or CRM)
   useEffect(() => {
+    console.log("[DEBUG] EmailComposer useEffect triggered. hasLoadedDraftRef =", hasLoadedDraftRef.current);
     if (hasLoadedDraftRef.current) return;
 
     try {
       const draftMode = localStorage.getItem("khanani_outbound_draft_mode");
       const draftTo = localStorage.getItem("khanani_outbound_draft_to");
+      const draftRecipients = localStorage.getItem("khanani_outbound_draft_recipients");
       let hasCustomPitch = false;
+      console.log("[DEBUG] Read from localStorage:", { draftMode, draftTo, draftRecipients });
 
-      if (draftTo) {
+      if (draftMode === "bulk" && draftRecipients) {
+        console.log("[DEBUG] Loading bulk draft mode...");
+        setSendMode("bulk");
+        setBulkRecipientsText(draftRecipients.trim());
+        
+        // Parse the first recipient for client preview
+        const parsed = parseBulkRecipients(draftRecipients);
+        if (parsed[0]) {
+          setActiveLeadDetails(parsed[0]);
+        }
+        
+        // Cleanup storage (Delayed to prevent React StrictMode double-mount issues)
+        setTimeout(() => {
+          localStorage.removeItem("khanani_outbound_draft_mode");
+          localStorage.removeItem("khanani_outbound_draft_recipients");
+        }, 1000);
+        
+        hasLoadedDraftRef.current = true;
+        return;
+      } else if (draftTo) {
         // Load proposal details if present
         const proposalIdVal = localStorage.getItem("khanani_outbound_draft_proposal_id");
         const leadIdVal = localStorage.getItem("khanani_outbound_draft_lead_id");
@@ -137,19 +159,23 @@ export default function EmailComposer() {
           }
         }
         
-        // Cleanup storage
-        localStorage.removeItem("khanani_outbound_draft_mode");
-        localStorage.removeItem("khanani_outbound_draft_to");
-        localStorage.removeItem("khanani_outbound_draft_client_name");
-        localStorage.removeItem("khanani_outbound_draft_contact_person");
-        localStorage.removeItem("khanani_outbound_draft_city");
-        localStorage.removeItem("khanani_outbound_draft_industry");
-        localStorage.removeItem("khanani_outbound_draft_website");
-        localStorage.removeItem("khanani_outbound_draft_phone");
-        localStorage.removeItem("khanani_outbound_draft_subject");
-        localStorage.removeItem("khanani_outbound_draft_body");
-        localStorage.removeItem("khanani_outbound_draft_proposal_id");
-        localStorage.removeItem("khanani_outbound_draft_lead_id");
+        // Cleanup storage (Delayed to prevent React StrictMode double-mount issues)
+        setTimeout(() => {
+          localStorage.removeItem("khanani_outbound_draft_mode");
+          localStorage.removeItem("khanani_outbound_draft_to");
+          localStorage.removeItem("khanani_outbound_draft_client_name");
+          localStorage.removeItem("khanani_outbound_draft_contact_person");
+          localStorage.removeItem("khanani_outbound_draft_city");
+          localStorage.removeItem("khanani_outbound_draft_industry");
+          localStorage.removeItem("khanani_outbound_draft_website");
+          localStorage.removeItem("khanani_outbound_draft_phone");
+          localStorage.removeItem("khanani_outbound_draft_subject");
+          localStorage.removeItem("khanani_outbound_draft_body");
+          localStorage.removeItem("khanani_outbound_draft_proposal_id");
+          localStorage.removeItem("khanani_outbound_draft_lead_id");
+        }, 1000);
+        
+        hasLoadedDraftRef.current = true;
 
         // Initialize template if no custom pitch was loaded
         if (!hasCustomPitch) {
@@ -160,7 +186,6 @@ export default function EmailComposer() {
             setBody(defaultTemplate.defaultBody);
           }
         }
-        hasLoadedDraftRef.current = true;
         return;
       }
     } catch (storageErr) {
@@ -169,21 +194,29 @@ export default function EmailComposer() {
 
     // Fallback to query params checking
     const toParam = searchParams.get("to");
-    const templateParam = searchParams.get("template");
+    const clientNameParam = searchParams.get("clientName") || searchParams.get("name");
     const subjectParam = searchParams.get("subject");
     const bodyParam = searchParams.get("body");
     
-    if (toParam) setTo(toParam);
-    
-    if (templateParam) {
-      const foundTemplate = KHANANI_TEMPLATES.find(t => t.id === templateParam);
-      if (foundTemplate) {
-        setSelectedTemplateId(templateParam);
-        setSubject(subjectParam || foundTemplate.defaultSubject);
-        setBody(bodyParam || foundTemplate.defaultBody);
-        hasLoadedDraftRef.current = true;
-        return;
-      }
+    if (toParam) {
+      setTo(toParam.trim());
+      if (clientNameParam) setClientName(clientNameParam.trim());
+      if (subjectParam) setSubject(subjectParam);
+      if (bodyParam) setBody(bodyParam);
+
+      const recipient: Recipient = {
+        email: toParam.trim(),
+        name: (clientNameParam || "").trim(),
+        contact_person: (searchParams.get("contact_person") || "").trim(),
+        city: (searchParams.get("city") || "").trim(),
+        niche: (searchParams.get("industry") || "").trim(),
+        website: (searchParams.get("website") || "").trim(),
+        phone: (searchParams.get("phone") || "").trim(),
+        industry: (searchParams.get("industry") || "").trim()
+      };
+      setActiveLeadDetails(recipient);
+      hasLoadedDraftRef.current = true;
+      return;
     }
 
     // Default template initialization
@@ -314,6 +347,14 @@ export default function EmailComposer() {
                 to: recipient.email
               }
             });
+
+            // Auto-schedule follow-up task 7 days from now
+            await supabase.from("tasks").insert({
+              lead_id: leadId,
+              title: "Follow up on outbound email outreach",
+              due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+              completed: false
+            });
           } catch (crmErr) {
             console.error("Failed to log activity to Supabase:", crmErr);
           }
@@ -361,6 +402,14 @@ export default function EmailComposer() {
                   templateId: selectedTemplateId,
                   to: recipient.email
                 }
+              });
+
+              // Auto-schedule follow-up task 7 days from now
+              await supabase.from("tasks").insert({
+                lead_id: matchedLeadId,
+                title: "Follow up on outbound bulk email outreach",
+                due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+                completed: false
               });
             }
           } catch (crmErr) {
@@ -483,9 +532,9 @@ export default function EmailComposer() {
       <div className="lg:col-span-7 space-y-4">
         
         {/* Step 1: Select Email Template */}
-        <div className="bg-slate-900/40 border border-slate-800/80 rounded-3xl p-5 shadow-2xl backdrop-blur-md transition-all duration-300 hover:border-slate-800">
-          <h2 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3.5 flex items-center gap-1.5">
-            <Sparkles className="w-4 h-4 text-sky-400 animate-pulse" />
+        <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm transition-all duration-300 hover:border-slate-300">
+          <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3.5 flex items-center gap-1.5">
+            <Sparkles className="w-4 h-4 text-sky-500 animate-pulse" />
             1. Select Email Template
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -498,8 +547,8 @@ export default function EmailComposer() {
                   onClick={() => handleTemplateChange(tmpl.id)}
                   className={`text-left p-3.5 rounded-2xl border transition-all duration-300 cursor-pointer hover:-translate-y-[1px] ${
                     isSelected
-                      ? "bg-sky-500/10 border-sky-500/30 text-sky-300 shadow-[0_0_15px_rgba(14,165,233,0.06)] hover:border-sky-400"
-                      : "bg-slate-950/40 border-slate-850 hover:bg-slate-900 hover:border-slate-800 text-slate-350"
+                      ? "bg-sky-50 border-sky-300 text-sky-700 shadow-sm hover:border-sky-400"
+                      : "bg-slate-50 border-slate-200 hover:bg-white hover:border-slate-300 text-slate-700"
                   }`}
                 >
                   <div className="font-bold text-xs mb-1 flex justify-between items-center">
@@ -518,17 +567,17 @@ export default function EmailComposer() {
         </div>
 
         {/* Step 2: Form and Configuration */}
-        <div className="bg-slate-900/40 border border-slate-800/80 rounded-3xl overflow-hidden shadow-2xl backdrop-blur-md transition-all duration-300 hover:border-slate-800">
+        <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm transition-all duration-300 hover:border-slate-300">
           
           {/* Send Mode Toggle Tabs */}
-          <div className="flex border-b border-slate-900 bg-slate-950/30 text-xs">
+          <div className="flex border-b border-slate-200 bg-slate-50 text-xs">
             <button
               type="button"
               onClick={() => { setSendMode("single"); setErrorMsg(""); }}
               className={`flex-1 py-3.5 font-bold flex items-center justify-center gap-2 cursor-pointer transition border-b-2 duration-300 ${
                 sendMode === "single"
-                  ? "border-sky-500 text-sky-400 bg-slate-900/10"
-                  : "border-transparent text-slate-450 hover:text-slate-200"
+                  ? "border-sky-500 text-sky-600 bg-white"
+                  : "border-transparent text-slate-400 hover:text-slate-700"
               }`}
             >
               <User className="w-4 h-4" />
@@ -539,8 +588,8 @@ export default function EmailComposer() {
               onClick={() => { setSendMode("bulk"); setErrorMsg(""); }}
               className={`flex-1 py-3.5 font-bold flex items-center justify-center gap-2 cursor-pointer transition border-b-2 duration-300 ${
                 sendMode === "bulk"
-                  ? "border-sky-500 text-sky-400 bg-slate-900/10"
-                  : "border-transparent text-slate-450 hover:text-slate-200"
+                  ? "border-sky-500 text-sky-600 bg-white"
+                  : "border-transparent text-slate-400 hover:text-slate-700"
               }`}
             >
               <Users className="w-4 h-4" />
@@ -552,13 +601,13 @@ export default function EmailComposer() {
             
             {/* AI Assistant Callout Banner */}
             {sendState !== "sending" && (
-              <div className="bg-indigo-950/25 border border-indigo-900/50 rounded-2xl p-4 flex justify-between items-center gap-4 hover:border-indigo-850/60 transition duration-200">
+              <div className="bg-indigo-50 border border-indigo-200 rounded-2xl p-4 flex justify-between items-center gap-4 hover:border-indigo-300 transition duration-200">
                 <div className="space-y-1">
-                  <span className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
-                    <Sparkles className="w-4 h-4 text-indigo-400 animate-pulse" />
+                  <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                    <Sparkles className="w-4 h-4 text-indigo-500 animate-pulse" />
                     AI Outreach Copywriter
                   </span>
-                  <p className="text-[10px] text-slate-450 leading-relaxed max-w-sm">
+                  <p className="text-[10px] text-slate-500 leading-relaxed max-w-sm">
                     Generate customized, high-converting cold email subject lines and body text based on niche details using Gemini AI.
                   </p>
                 </div>
@@ -595,7 +644,7 @@ export default function EmailComposer() {
             {/* Common Inputs */}
             <div className="space-y-1.5">
               <div className="flex justify-between items-center">
-                <label htmlFor="subject" className="block text-xs font-semibold text-slate-450 uppercase tracking-wider">
+                <label htmlFor="subject" className="block text-xs font-semibold text-slate-500 uppercase tracking-wider">
                   Subject Line
                 </label>
                 <button
@@ -615,13 +664,13 @@ export default function EmailComposer() {
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
                 disabled={sendState === "sending"}
-                className="w-full bg-slate-950 border border-slate-850 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/10 rounded-xl px-4 py-3 text-xs text-slate-100 outline-none transition duration-200 hover:border-slate-800"
+                className="w-full bg-slate-50 border border-slate-200 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/10 rounded-xl px-4 py-3 text-xs text-slate-800 outline-none transition duration-200 hover:border-slate-300"
               />
             </div>
 
             <div className="space-y-1.5">
               <div className="flex justify-between items-center">
-                <label htmlFor="body" className="block text-xs font-semibold text-slate-450 uppercase tracking-wider">
+                <label htmlFor="body" className="block text-xs font-semibold text-slate-500 uppercase tracking-wider">
                   Email Content Body
                 </label>
                 <button
@@ -641,7 +690,7 @@ export default function EmailComposer() {
                 value={body}
                 onChange={(e) => setBody(e.target.value)}
                 disabled={sendState === "sending"}
-                className="w-full bg-slate-950 border border-slate-850 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/10 rounded-xl px-4 py-3 text-xs text-slate-100 outline-none transition resize-y font-sans leading-relaxed hover:border-slate-800"
+                className="w-full bg-slate-50 border border-slate-200 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/10 rounded-xl px-4 py-3 text-xs text-slate-800 outline-none transition resize-y font-sans leading-relaxed hover:border-slate-300"
               />
             </div>
 
@@ -659,9 +708,9 @@ export default function EmailComposer() {
             {sendState !== "sending" && sendState !== "success" && (
               <button
                 type="submit"
-                className="w-full cursor-pointer flex items-center justify-center gap-2 bg-gradient-to-r from-sky-500 to-indigo-500 hover:from-sky-400 hover:to-indigo-400 text-slate-950 font-black py-3.5 rounded-xl text-xs transition shadow-lg hover:scale-[1.01] active:scale-[0.99]"
+                className="w-full cursor-pointer flex items-center justify-center gap-2 bg-gradient-to-r from-sky-500 to-indigo-500 hover:from-sky-400 hover:to-indigo-400 text-white font-black py-3.5 rounded-xl text-xs transition shadow-lg hover:scale-[1.01] active:scale-[0.99]"
               >
-                <Send className="w-3.5 h-3.5 text-slate-950 stroke-[2.5]" />
+                <Send className="w-3.5 h-3.5 text-white stroke-[2.5]" />
                 {sendMode === "single" ? "Send Outreach Email" : `Dispatch Campaign to ${parsedBulkRecipients.length} leads`}
               </button>
             )}
@@ -671,14 +720,14 @@ export default function EmailComposer() {
 
       {/* RIGHT COLUMN: Preview & AI Assist */}
       <div className="lg:col-span-5 space-y-4">
-        <div className="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-1 flex items-center gap-1 shadow-inner backdrop-blur-md">
+        <div className="bg-slate-100 border border-slate-200 rounded-2xl p-1 flex items-center gap-1 shadow-inner">
           <button
             type="button"
             onClick={() => setRightPanelTab("preview")}
             className={`flex-1 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer ${
               rightPanelTab === "preview"
-                ? "bg-slate-950 text-indigo-400 border border-slate-850"
-                : "text-slate-500 hover:text-slate-350"
+                ? "bg-white text-indigo-600 border border-slate-200 shadow-sm"
+                : "text-slate-500 hover:text-slate-700"
             }`}
           >
             <ExternalLink className="w-3.5 h-3.5" />
@@ -689,11 +738,11 @@ export default function EmailComposer() {
             onClick={() => setRightPanelTab("ai")}
             className={`flex-1 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer ${
               rightPanelTab === "ai"
-                ? "bg-slate-950 text-indigo-400 border border-slate-850"
-                : "text-slate-500 hover:text-slate-350"
+                ? "bg-white text-indigo-600 border border-slate-200 shadow-sm"
+                : "text-slate-500 hover:text-slate-700"
             }`}
           >
-            <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+            <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
             AI Generator
           </button>
         </div>
@@ -788,9 +837,9 @@ function AIAssistPanel({ activeLead, onApply }: AIAssistPanelProps) {
   };
 
   return (
-    <div className="bg-slate-900/40 border border-slate-800/80 rounded-3xl p-5 shadow-2xl backdrop-blur-md space-y-4">
+    <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-xs font-bold text-slate-100 uppercase tracking-wider flex items-center gap-2">
+        <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
           <Sparkles className="w-4 h-4 text-indigo-400" />
           AI Outreach Pitch Generator
         </h3>
@@ -810,7 +859,7 @@ function AIAssistPanel({ activeLead, onApply }: AIAssistPanelProps) {
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g. Acme Builders"
-            className="w-full bg-slate-950 border border-slate-850 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none focus:border-indigo-500 transition"
+            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 outline-none focus:border-indigo-500 transition"
           />
         </div>
 
@@ -823,7 +872,7 @@ function AIAssistPanel({ activeLead, onApply }: AIAssistPanelProps) {
               value={industry}
               onChange={(e) => setIndustry(e.target.value)}
               placeholder="e.g. Roofing"
-              className="w-full bg-slate-950 border border-slate-850 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none focus:border-indigo-500 transition"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 outline-none focus:border-indigo-500 transition"
             />
           </div>
           {/* City */}
@@ -834,7 +883,7 @@ function AIAssistPanel({ activeLead, onApply }: AIAssistPanelProps) {
               value={city}
               onChange={(e) => setCity(e.target.value)}
               placeholder="e.g. Miami"
-              className="w-full bg-slate-950 border border-slate-850 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none focus:border-indigo-500 transition"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 outline-none focus:border-indigo-500 transition"
             />
           </div>
         </div>
@@ -848,7 +897,7 @@ function AIAssistPanel({ activeLead, onApply }: AIAssistPanelProps) {
               value={owner}
               onChange={(e) => setOwner(e.target.value)}
               placeholder="e.g. John Doe"
-              className="w-full bg-slate-950 border border-slate-850 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none focus:border-indigo-500 transition"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 outline-none focus:border-indigo-500 transition"
             />
           </div>
           {/* Tone Style */}
@@ -857,7 +906,7 @@ function AIAssistPanel({ activeLead, onApply }: AIAssistPanelProps) {
             <select
               value={style}
               onChange={(e) => setStyle(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-850 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none focus:border-indigo-500 transition cursor-pointer"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 outline-none focus:border-indigo-500 transition cursor-pointer"
             >
               <option value="Casual">Casual & Friendly</option>
               <option value="Professional">Professional Pitch</option>
@@ -875,7 +924,7 @@ function AIAssistPanel({ activeLead, onApply }: AIAssistPanelProps) {
             value={focus}
             onChange={(e) => setFocus(e.target.value)}
             placeholder="e.g. custom website redesign, commercial roofing offer"
-            className="w-full bg-slate-950 border border-slate-850 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none focus:border-indigo-500 transition"
+            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 outline-none focus:border-indigo-500 transition"
           />
         </div>
 
@@ -915,13 +964,13 @@ function AIAssistPanel({ activeLead, onApply }: AIAssistPanelProps) {
             )}
             <div className="space-y-1">
               <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest block">Generated Subject:</span>
-              <p className="text-xs text-slate-200 font-bold bg-slate-950/80 p-2.5 rounded-lg border border-slate-900 leading-tight">
+              <p className="text-xs text-slate-800 font-bold bg-slate-50 p-2.5 rounded-lg border border-slate-200 leading-tight">
                 {result.subject}
               </p>
             </div>
             <div className="space-y-1">
               <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest block">Generated Body:</span>
-              <div className="text-xs text-slate-300 bg-slate-950/80 p-2.5 rounded-lg border border-slate-900 font-sans leading-relaxed whitespace-pre-wrap max-h-48 overflow-y-auto scrollbar-thin">
+              <div className="text-xs text-slate-700 bg-slate-50 p-2.5 rounded-lg border border-slate-200 font-sans leading-relaxed whitespace-pre-wrap max-h-48 overflow-y-auto scrollbar-thin">
                 {result.body}
               </div>
             </div>

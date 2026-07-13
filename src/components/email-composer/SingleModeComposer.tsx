@@ -19,7 +19,7 @@ export default function SingleModeComposer({
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div className="space-y-1.5">
-        <label htmlFor="clientName" className="block text-xs font-semibold text-slate-450 uppercase tracking-wider">
+        <label htmlFor="clientName" className="block text-xs font-semibold text-slate-500 uppercase tracking-wider">
           Company / Client Name
         </label>
         <input
@@ -29,12 +29,12 @@ export default function SingleModeComposer({
           value={clientName}
           onChange={(e) => setClientName(e.target.value)}
           disabled={disabled}
-          className="w-full bg-slate-950 border border-slate-850 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/10 rounded-xl px-4 py-3 text-xs text-slate-100 outline-none transition duration-200 hover:border-slate-800"
+          className="w-full bg-slate-50 border border-slate-200 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/10 rounded-xl px-4 py-3 text-xs text-slate-800 outline-none transition duration-200 hover:border-slate-300"
         />
       </div>
 
       <div className="space-y-1.5">
-        <label htmlFor="to" className="block text-xs font-semibold text-slate-450 uppercase tracking-wider">
+        <label htmlFor="to" className="block text-xs font-semibold text-slate-500 uppercase tracking-wider">
           Recipient Email Address
         </label>
         <div className="relative">
@@ -47,7 +47,7 @@ export default function SingleModeComposer({
             value={to}
             onChange={(e) => setTo(e.target.value)}
             disabled={disabled}
-            className="w-full bg-slate-950 border border-slate-850 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/10 rounded-xl pl-10 pr-4 py-3 text-xs text-slate-100 outline-none transition duration-200 hover:border-slate-800"
+            className="w-full bg-slate-50 border border-slate-200 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/10 rounded-xl pl-10 pr-4 py-3 text-xs text-slate-800 outline-none transition duration-200 hover:border-slate-300"
           />
         </div>
       </div>

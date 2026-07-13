@@ -77,17 +77,17 @@ const CRM_STATUSES = [
 ];
 
 const STATUS_COLORS: Record<string, string> = {
-  New: "bg-slate-500/10 text-slate-400 border-slate-500/20",
-  Researching: "bg-purple-500/10 text-purple-400 border-purple-500/20",
-  Qualified: "bg-blue-500/10 text-blue-400 border-blue-500/20",
-  Contacted: "bg-amber-500/10 text-amber-400 border-amber-500/20",
-  "Email Opened": "bg-sky-500/10 text-sky-400 border-sky-500/20",
-  Replied: "bg-pink-500/10 text-pink-400 border-pink-500/20",
-  Meeting: "bg-yellow-500/10 text-yellow-400 border-yellow-500/20",
-  Proposal: "bg-teal-500/10 text-teal-400 border-teal-500/20",
-  Negotiation: "bg-indigo-500/10 text-indigo-400 border-indigo-500/20",
-  Won: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
-  Lost: "bg-rose-500/10 text-rose-400 border-rose-500/20"
+  New: "bg-slate-50 text-slate-650 border border-slate-200",
+  Researching: "bg-purple-50 text-purple-700 border border-purple-100",
+  Qualified: "bg-blue-50 text-blue-700 border border-blue-100",
+  Contacted: "bg-amber-50 text-amber-700 border border-amber-100",
+  "Email Opened": "bg-sky-50 text-sky-700 border border-sky-100",
+  Replied: "bg-pink-50 text-pink-700 border border-pink-100",
+  Meeting: "bg-yellow-50 text-yellow-750 border border-yellow-100",
+  Proposal: "bg-teal-50 text-teal-700 border border-teal-100",
+  Negotiation: "bg-indigo-50 text-indigo-700 border border-indigo-100",
+  Won: "bg-emerald-50 text-emerald-700 border border-emerald-100",
+  Lost: "bg-rose-50 text-rose-700 border border-rose-100"
 };
 
 export default function CRMDashboard() {
@@ -485,6 +485,36 @@ export default function CRMDashboard() {
     router.push("/");
   };
 
+  const handleOverdueFollowUpEmail = (lead: Lead) => {
+    localStorage.setItem("khanani_outbound_draft_to", lead.email || "");
+    localStorage.setItem("khanani_outbound_draft_client_name", lead.name || "");
+    localStorage.setItem("khanani_outbound_draft_contact_person", lead.owner || "");
+    localStorage.setItem("khanani_outbound_draft_city", lead.city || "");
+    localStorage.setItem("khanani_outbound_draft_industry", lead.industry || "");
+    localStorage.setItem("khanani_outbound_draft_website", lead.website || "");
+    localStorage.setItem("khanani_outbound_draft_phone", lead.phone || "");
+    localStorage.setItem("khanani_outbound_draft_mode", "single");
+    localStorage.setItem("khanani_outbound_draft_lead_id", lead.id);
+    
+    // Pre-populate standard professional follow-up draft
+    localStorage.setItem("khanani_outbound_draft_subject", `Re-engage: Following up on our discussion - Khanani Innovations`);
+    
+    const emailBody = `Hi ${lead.owner || "there"},\n\nI hope you're having a productive week.\n\nI wanted to follow up briefly on my previous email regarding digital development solutions for ${lead.name} in ${lead.city || "your city"}.\n\nIf you have a few minutes this week, I'd love to connect for a brief 5-minute introductory call to share some ideas we mapped out for your business. Would you be open to this?\n\nBest regards,\nKhanani Innovations Team`;
+    localStorage.setItem("khanani_outbound_draft_body", emailBody);
+
+    const qTo = encodeURIComponent(lead.email || "");
+    const qName = encodeURIComponent(lead.name || "");
+    const qOwner = encodeURIComponent(lead.owner || "");
+    const qCity = encodeURIComponent(lead.city || "");
+    const qIndustry = encodeURIComponent(lead.industry || "");
+    const qWebsite = encodeURIComponent(lead.website || "");
+    const qPhone = encodeURIComponent(lead.phone || "");
+    const qSubject = encodeURIComponent("Re-engage: Following up on our discussion - Khanani Innovations");
+    const qBody = encodeURIComponent(emailBody);
+
+    router.push(`/?to=${qTo}&clientName=${qName}&contact_person=${qOwner}&city=${qCity}&industry=${qIndustry}&website=${qWebsite}&phone=${qPhone}&subject=${qSubject}&body=${qBody}&leadId=${lead.id}`);
+  };
+
   // Add lead manually
   const handleCreateLead = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -613,11 +643,11 @@ export default function CRMDashboard() {
       {/* Page Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-to-br from-slate-900/60 via-slate-950/70 to-slate-900/60 border border-slate-800/80 rounded-2xl p-5 shadow-2xl backdrop-blur-md">
         <div>
-          <h1 className="text-2xl font-bold text-slate-100 flex items-center gap-2.5">
+          <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2.5">
             <Building2 className="w-6.5 h-6.5 text-indigo-400" />
             CRM Lead Pipeline
           </h1>
-          <p className="text-slate-400 text-xs mt-1 leading-relaxed">
+          <p className="text-slate-500 text-xs mt-1 leading-relaxed">
             Manage your qualified prospects, log notes, view interaction history, and coordinate automated outreach emails.
           </p>
         </div>
@@ -665,9 +695,9 @@ export default function CRMDashboard() {
               boxShadow: "0 0 20px rgba(99, 102, 241, 0.4)",
             }}
             whileTap={{ scale: 0.97 }}
-            className="group px-4 py-2 bg-gradient-to-r from-indigo-600 via-indigo-550 to-indigo-600 hover:from-indigo-500 hover:to-indigo-550 text-xs font-bold text-slate-50 hover:text-white rounded-xl transition-all duration-200 flex items-center gap-1.5 cursor-pointer shadow-[0_4px_14px_rgba(99,102,241,0.2)] border border-indigo-500/30"
+            className="group px-4 py-2 bg-gradient-to-r from-indigo-600 via-indigo-550 to-indigo-600 hover:from-indigo-500 hover:to-indigo-550 text-xs font-bold text-white hover:text-white rounded-xl transition-all duration-200 flex items-center gap-1.5 cursor-pointer shadow-[0_4px_14px_rgba(99,102,241,0.2)] border border-indigo-500/30"
           >
-            <Plus className="w-4 h-4 text-slate-100 stroke-[3px] group-hover:rotate-90 transition-transform duration-300" />
+            <Plus className="w-4 h-4 text-white stroke-[3px] group-hover:rotate-90 transition-transform duration-300" />
             Add Lead
           </motion.button>
         </div>
@@ -725,9 +755,9 @@ export default function CRMDashboard() {
           <div className="lg:col-span-2 flex gap-2">
             <button
               type="submit"
-              className="flex-1 py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 hover:scale-[1.02] active:scale-[0.98] text-slate-100 shadow-[0_4px_12px_rgba(99,102,241,0.15)] text-xs font-bold rounded-xl transition duration-250 flex items-center justify-center gap-1.5 cursor-pointer border border-indigo-500/20"
+              className="flex-1 py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 hover:scale-[1.02] active:scale-[0.98] text-white shadow-[0_4px_12px_rgba(99,102,241,0.15)] text-xs font-bold rounded-xl transition duration-250 flex items-center justify-center gap-1.5 cursor-pointer border border-indigo-500/20"
             >
-              <Filter className="w-3.5 h-3.5 text-slate-100" />
+              <Filter className="w-3.5 h-3.5 text-white" />
               Filter
             </button>
             <button
@@ -811,19 +841,19 @@ export default function CRMDashboard() {
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="flex flex-wrap items-center justify-between gap-3 bg-gradient-to-r from-sky-950/50 to-indigo-950/50 border border-sky-500/20 text-sky-200 rounded-xl px-4 py-3.5 shadow-xl backdrop-blur-md"
+            className="flex flex-wrap items-center justify-between gap-3 bg-gradient-to-r from-sky-50 to-indigo-50 border border-sky-200 text-slate-800 rounded-xl px-4 py-3.5 shadow-md"
           >
             <div className="flex items-center gap-2.5">
-              <div className="bg-sky-500 text-slate-950 rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-black">
+              <div className="bg-sky-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-black">
                 {selectedIds.length}
               </div>
-              <span className="text-xs font-bold">Leads Selected</span>
+              <span className="text-xs font-bold text-slate-800">Leads Selected</span>
             </div>
 
             <div className="flex items-center gap-2 text-xs">
               <button
                 onClick={handleBulkEmailComposerRedirect}
-                className="px-3.5 py-1.5 bg-sky-500 hover:bg-sky-400 text-slate-950 font-black rounded-lg transition duration-200 flex items-center gap-1.5 cursor-pointer"
+                className="px-3.5 py-1.5 bg-sky-500 hover:bg-sky-400 text-white font-black rounded-lg transition duration-200 flex items-center gap-1.5 cursor-pointer"
               >
                 <Mail className="w-3.5 h-3.5 stroke-[2.5]" />
                 Send Bulk Email
@@ -832,21 +862,21 @@ export default function CRMDashboard() {
               <div className="relative">
                 <button
                   onClick={() => setShowBulkMenu(!showBulkMenu)}
-                  className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-850 border border-slate-800 text-slate-200 font-bold rounded-lg transition duration-200 flex items-center gap-1 cursor-pointer"
+                  className="px-3.5 py-1.5 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-bold rounded-lg transition duration-200 flex items-center gap-1 cursor-pointer"
                 >
                   Change Status
-                  <ChevronDown className="w-3 h-3" />
+                  <ChevronDown className="w-3 h-3 text-slate-500" />
                 </button>
 
                 {showBulkMenu && (
                   <>
                     <div className="fixed inset-0 z-40" onClick={() => setShowBulkMenu(false)} />
-                    <div className="absolute right-0 bottom-full mb-2 w-48 bg-slate-900 border border-slate-800 rounded-xl shadow-2xl z-50 py-1.5 overflow-hidden">
+                    <div className="absolute right-0 bottom-full mb-2 w-48 bg-white border border-slate-200 rounded-xl shadow-xl z-50 py-1.5 overflow-hidden">
                       {CRM_STATUSES.map(status => (
                         <button
                           key={status}
                           onClick={() => handleBulkStatusChange(status)}
-                          className="w-full text-left px-4 py-2 hover:bg-slate-800 text-slate-300 hover:text-slate-100 text-xs transition duration-150"
+                          className="w-full text-left px-4 py-2 hover:bg-slate-50 text-slate-700 hover:text-slate-800 text-xs transition duration-150"
                         >
                           Mark as {status}
                         </button>
@@ -858,7 +888,7 @@ export default function CRMDashboard() {
 
               <button
                 onClick={handleBulkDelete}
-                className="px-3.5 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-rose-400 font-bold rounded-lg transition duration-200 flex items-center gap-1.5 cursor-pointer"
+                className="px-3.5 py-1.5 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-600 font-bold rounded-lg transition duration-200 flex items-center gap-1.5 cursor-pointer"
               >
                 <Trash2 className="w-3.5 h-3.5" />
                 Delete
@@ -866,7 +896,7 @@ export default function CRMDashboard() {
 
               <button
                 onClick={() => setSelectedIds([])}
-                className="px-2.5 py-1.5 bg-transparent text-slate-400 hover:text-slate-200 font-semibold"
+                className="px-2.5 py-1.5 bg-transparent text-slate-500 hover:text-slate-800 font-semibold"
               >
                 Clear
               </button>
@@ -877,21 +907,35 @@ export default function CRMDashboard() {
 
       {/* Overdue Tasks Alert Banner */}
       {!isLoading && leads.filter(l => (l.overdue_tasks_count || 0) > 0).length > 0 && (
-        <div className="bg-rose-500/10 border border-rose-500/20 text-rose-200 rounded-2xl p-4 flex gap-3.5 items-start shadow-xl">
-          <AlertCircle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
-          <div className="space-y-1">
-            <span className="font-bold text-xs uppercase tracking-wider text-rose-350 block">Overdue Follow-Up Actions</span>
-            <p className="text-slate-355 text-xs leading-normal">
-              You have {leads.filter(l => (l.overdue_tasks_count || 0) > 0).length} prospect(s) with pending actions that are past their due dates:{" "}
-              {leads.filter(l => (l.overdue_tasks_count || 0) > 0).map((l, i, arr) => (
-                <span key={l.id}>
-                  <Link href={`/crm/${l.id}`} className="font-bold text-rose-300 hover:underline">
+        <div className="bg-rose-50 border border-rose-200 text-rose-800 rounded-2xl p-5 shadow-sm space-y-4">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-5 h-5 text-rose-500 shrink-0" />
+            <span className="font-bold text-xs uppercase tracking-wider text-rose-800 block">Overdue Follow-Up Actions</span>
+          </div>
+          
+          <div className="divide-y divide-rose-100/50">
+            {leads.filter(l => (l.overdue_tasks_count || 0) > 0).map((l) => (
+              <div key={l.id} className="py-2.5 first:pt-0 last:pb-0 flex items-center justify-between gap-4 text-xs">
+                <div className="space-y-0.5">
+                  <Link href={`/crm/${l.id}`} className="font-bold text-slate-800 hover:text-indigo-600 transition-colors">
                     {l.name}
                   </Link>
-                  {i < arr.length - 1 ? ", " : ""}
-                </span>
-              ))}
-            </p>
+                  <div className="text-[10px] text-slate-500 flex items-center gap-1.5">
+                    <span>{l.city}</span>
+                    <span>•</span>
+                    <span>{l.industry}</span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleOverdueFollowUpEmail(l)}
+                  className="px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white font-bold text-[10px] uppercase tracking-wider rounded-lg shadow-sm flex items-center gap-1 cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98]"
+                >
+                  <Mail className="w-3 h-3 text-white" />
+                  Email Again
+                </button>
+              </div>
+            ))}
           </div>
         </div>
       )}
@@ -1105,11 +1149,25 @@ export default function CRMDashboard() {
                           {lead.email ? (
                             <button
                               onClick={() => {
-                                // Formulate direct composer
-                                const csvContent = `${lead.email},${lead.name},${lead.owner || ""},${lead.city || ""},${lead.industry || ""},${lead.website || ""},${lead.phone || ""}`;
-                                localStorage.setItem("khanani_outbound_draft_recipients", csvContent);
+                                localStorage.setItem("khanani_outbound_draft_to", lead.email || "");
+                                localStorage.setItem("khanani_outbound_draft_client_name", lead.name || "");
+                                localStorage.setItem("khanani_outbound_draft_contact_person", lead.owner || "");
+                                localStorage.setItem("khanani_outbound_draft_city", lead.city || "");
+                                localStorage.setItem("khanani_outbound_draft_industry", lead.industry || "");
+                                localStorage.setItem("khanani_outbound_draft_website", lead.website || "");
+                                localStorage.setItem("khanani_outbound_draft_phone", lead.phone || "");
                                 localStorage.setItem("khanani_outbound_draft_mode", "single");
-                                router.push("/");
+                                localStorage.setItem("khanani_outbound_draft_lead_id", lead.id);
+
+                                const qTo = encodeURIComponent(lead.email || "");
+                                const qName = encodeURIComponent(lead.name || "");
+                                const qOwner = encodeURIComponent(lead.owner || "");
+                                const qCity = encodeURIComponent(lead.city || "");
+                                const qIndustry = encodeURIComponent(lead.industry || "");
+                                const qWebsite = encodeURIComponent(lead.website || "");
+                                const qPhone = encodeURIComponent(lead.phone || "");
+
+                                router.push(`/?to=${qTo}&clientName=${qName}&contact_person=${qOwner}&city=${qCity}&industry=${qIndustry}&website=${qWebsite}&phone=${qPhone}&leadId=${lead.id}`);
                               }}
                               className="p-1.5 hover:bg-slate-850 hover:text-slate-200 border border-transparent hover:border-slate-800 rounded-lg text-slate-400 transition"
                               title="Compose Email"
@@ -1198,7 +1256,7 @@ export default function CRMDashboard() {
                   handleDrop(e, columnStatus);
                   setDraggedOverColumn(null);
                 }}
-                className={`w-72 shrink-0 bg-slate-900/10 border rounded-2xl p-4 flex flex-col min-h-[520px] transition-all duration-300 ${
+                className={`w-72 shrink-0 bg-slate-900/10 border rounded-2xl p-4 flex flex-col h-[600px] transition-all duration-300 ${
                   draggedOverColumn === columnStatus
                     ? "bg-indigo-500/[0.03] border-indigo-500/40 border-dashed scale-[1.02] shadow-[0_10px_25px_rgba(99,102,241,0.1)]"
                     : columnStatus === "Won"
@@ -1235,8 +1293,8 @@ export default function CRMDashboard() {
 
                 {/* Column Cards List */}
                 <div 
-                  onDragOver={(e) => e.preventDefault()}
-                  className="flex-1 space-y-3 overflow-y-auto scrollbar-none p-1.5 min-h-[400px]"
+                   onDragOver={(e) => e.preventDefault()}
+                   className="flex-1 space-y-3 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-800 pr-1 p-1.5"
                 >
                   <AnimatePresence mode="popLayout">
                     {columnLeads.length === 0 ? (
@@ -1518,7 +1576,7 @@ export default function CRMDashboard() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-4 py-2 bg-gradient-to-r from-sky-500 to-indigo-500 hover:from-sky-400 hover:to-indigo-400 text-xs font-bold text-slate-950 rounded-xl transition duration-300 disabled:opacity-50 cursor-pointer"
+                  className="px-4 py-2 bg-gradient-to-r from-sky-500 to-indigo-500 hover:from-sky-400 hover:to-indigo-400 text-xs font-bold text-white rounded-xl transition duration-300 disabled:opacity-50 cursor-pointer"
                 >
                   {isSubmitting ? "Creating..." : "Save Lead"}
                 </button>

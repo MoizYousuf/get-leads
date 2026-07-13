@@ -110,3 +110,21 @@ CREATE TRIGGER update_proposals_updated_at
     BEFORE UPDATE ON proposals
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
+
+-- 7. Create website_audits table (cached technical site health reports)
+CREATE TABLE IF NOT EXISTS website_audits (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    lead_id UUID NOT NULL REFERENCES leads(id) ON DELETE CASCADE UNIQUE,
+    screenshot_url TEXT,
+    scores JSONB DEFAULT '{"performance": 0, "seo": 0, "mobile": 0, "overall": 0}'::jsonb,
+    findings JSONB DEFAULT '{"bugs": [], "recommendations": [], "seoKeywords": []}'::jsonb,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_website_audits_lead_id ON website_audits(lead_id);
+
+CREATE TRIGGER update_website_audits_updated_at
+    BEFORE UPDATE ON website_audits
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();

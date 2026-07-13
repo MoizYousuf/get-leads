@@ -121,14 +121,42 @@ const ACTIVITY_ICONS: Record<string, any> = {
 };
 
 const ACTIVITY_COLORS: Record<string, string> = {
-  created: "text-indigo-400 bg-indigo-550/10 border-indigo-500/20",
-  imported: "text-sky-400 bg-sky-550/10 border-sky-500/20",
-  status_changed: "text-amber-400 bg-amber-550/10 border-amber-500/20",
-  email_sent: "text-emerald-400 bg-emerald-550/10 border-emerald-500/20",
-  note_added: "text-purple-400 bg-purple-550/10 border-purple-500/20",
-  task_created: "text-sky-400 bg-sky-550/10 border-sky-550/15",
-  task_completed: "text-emerald-400 bg-emerald-550/10 border-emerald-550/15",
-  default: "text-slate-400 bg-slate-550/10 border-slate-500/20"
+  created: "text-indigo-400 bg-slate-955 border-indigo-500/30",
+  imported: "text-sky-400 bg-slate-955 border-sky-500/30",
+  status_changed: "text-amber-400 bg-slate-955 border-amber-500/30",
+  email_sent: "text-emerald-400 bg-slate-955 border-emerald-500/30",
+  note_added: "text-purple-400 bg-slate-955 border-purple-500/30",
+  task_created: "text-sky-400 bg-slate-955 border-sky-500/30",
+  task_completed: "text-emerald-400 bg-slate-955 border-emerald-500/30",
+  default: "text-slate-400 bg-slate-955 border-slate-500/30"
+};
+
+const getTimelineBorderColor = (type: string) => {
+  switch (type) {
+    case "created": return "border-l-indigo-500/50";
+    case "imported": return "border-l-sky-500/50";
+    case "status_changed": return "border-l-amber-500/50";
+    case "email_sent": return "border-l-emerald-500/50";
+    case "note_added": return "border-l-purple-500/50";
+    case "task_created": return "border-l-sky-500/50";
+    case "task_completed": return "border-l-emerald-500/50";
+    default: return "border-l-indigo-500/50";
+  }
+};
+
+const formatTimelineTime = (dateStr: string) => {
+  try {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true
+    });
+  } catch (e) {
+    return dateStr;
+  }
 };
 
 export default function LeadDetailsPage({ params }: PageProps) {
@@ -852,7 +880,7 @@ export default function LeadDetailsPage({ params }: PageProps) {
                         return (
                           <div key={act.id} className="relative group">
                             {/* Indicator point */}
-                            <div className="absolute -left-[35px] top-1 flex items-center justify-center">
+                            <div className="absolute -left-[41px] top-1.5 flex items-center justify-center z-10">
                               <div className={`w-8 h-8 rounded-full border flex items-center justify-center ${badgeColor} shadow-md`}>
                                 <Icon className="w-4.5 h-4.5" />
                               </div>
@@ -862,11 +890,11 @@ export default function LeadDetailsPage({ params }: PageProps) {
                               <div className="flex items-center justify-between gap-4">
                                 <span className="font-bold text-xs text-slate-200">{act.title}</span>
                                 <span className="text-[10px] text-slate-500 shrink-0">
-                                  {new Date(act.created_at).toLocaleString()}
+                                  {formatTimelineTime(act.created_at)}
                                 </span>
                               </div>
                               {act.description && (
-                                <p className="text-[11px] text-slate-400 leading-relaxed bg-slate-950/20 border border-slate-900/60 rounded-xl p-3 mt-1.5">
+                                <p className={`text-[11px] text-slate-350 leading-relaxed bg-slate-955/40 border border-slate-900/50 border-l-2 ${getTimelineBorderColor(act.type)} rounded-xl p-3.5 mt-1.5`}>
                                   {act.description}
                                 </p>
                               )}

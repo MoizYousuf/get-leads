@@ -22,34 +22,88 @@ interface BulkAuditOutreachModalProps {
   onSent: () => void;
 }
 
+interface GenError {
+  leadId: string;
+  message: string;
+}
+
 export function BulkAuditOutreachModal({ leadIds, onClose, onSent }: BulkAuditOutreachModalProps) {
   const [loading, setLoading] = useState(true);
+  const [genProgress, setGenProgress] = useState({ done: 0, total: leadIds.length });
   const [drafts, setDrafts] = useState<Draft[]>([]);
   const [error, setError] = useState("");
+  const [genErrors, setGenErrors] = useState<GenError[]>([]);
+  const [retryingIds, setRetryingIds] = useState<Set<string>>(new Set());
   const [sending, setSending] = useState(false);
   const [sentCount, setSentCount] = useState(0);
   const [failedCount, setFailedCount] = useState(0);
   const [done, setDone] = useState(false);
 
+  // Generates one lead's personalized email. Returns true on success (and appends the
+  // draft), false on failure (and records/updates a per-lead retry-able error).
+  const generateForLead = async (leadId: string): Promise<boolean> => {
+    try {
+      const res = await fetch("/api/crm/leads/generate-bulk-emails", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ leadIds: [leadId] }),
+      });
+      const data = await res.json();
+
+      if (data.success && data.data?.[0]) {
+        const d = data.data[0];
+        setDrafts((prev) => [...prev.filter((p) => p.leadId !== leadId), { ...d, include: !!d.email }]);
+        setGenErrors((prev) => prev.filter((e) => e.leadId !== leadId));
+        return true;
+      }
+      const message = data.error || "Failed to generate email";
+      setGenErrors((prev) => [...prev.filter((e) => e.leadId !== leadId), { leadId, message }]);
+      return false;
+    } catch (err: any) {
+      const message = err.message || "Failed to generate email";
+      setGenErrors((prev) => [...prev.filter((e) => e.leadId !== leadId), { leadId, message }]);
+      return false;
+    }
+  };
+
   useEffect(() => {
-    fetch("/api/crm/leads/generate-bulk-emails", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ leadIds }),
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success) {
-          setDrafts(
-            (data.data || []).map((d: any) => ({ ...d, include: !!d.email }))
-          );
-        } else {
-          setError(data.error || "Failed to generate emails");
+    let cancelled = false;
+
+    async function generateOneByOne() {
+      // The audit-generation API (Gemini calls) is slow — generate and render each
+      // lead's email as soon as it's ready instead of blocking on the whole batch,
+      // so the user sees progress and can start reviewing the first results early.
+      for (let i = 0; i < leadIds.length; i++) {
+        if (cancelled) return;
+        await generateForLead(leadIds[i]);
+        if (!cancelled) {
+          setGenProgress({ done: i + 1, total: leadIds.length });
         }
-      })
-      .catch((err) => setError(err.message || "Failed to generate emails"))
-      .finally(() => setLoading(false));
+      }
+      if (!cancelled) setLoading(false);
+    }
+
+    if (leadIds.length === 0) {
+      setError("No leads selected");
+      setLoading(false);
+    } else {
+      generateOneByOne();
+    }
+
+    return () => {
+      cancelled = true;
+    };
   }, [leadIds]);
+
+  const handleRetry = async (leadId: string) => {
+    setRetryingIds((prev) => new Set(prev).add(leadId));
+    await generateForLead(leadId);
+    setRetryingIds((prev) => {
+      const next = new Set(prev);
+      next.delete(leadId);
+      return next;
+    });
+  };
 
   const updateDraft = (leadId: string, patch: Partial<Draft>) => {
     setDrafts((prev) => prev.map((d) => (d.leadId === leadId ? { ...d, ...patch } : d)));
@@ -115,9 +169,23 @@ export function BulkAuditOutreachModal({ leadIds, onClose, onSent }: BulkAuditOu
 
         <div className="flex-1 overflow-y-auto p-5 space-y-3">
           {loading && (
-            <div className="flex items-center justify-center py-16 text-sm text-slate-500 gap-2">
-              <span className="w-4 h-4 border-2 border-slate-300 border-t-accent rounded-full animate-spin" />
-              Generating a personalized email for each lead using their website audit...
+            <div className="space-y-2 py-3">
+              <div className="flex items-center justify-between text-xs font-semibold text-slate-600">
+                <span className="flex items-center gap-1.5">
+                  <span className="w-3.5 h-3.5 border-2 border-slate-300 border-t-accent rounded-full animate-spin" />
+                  Generating email {genProgress.done + 1} of {genProgress.total}...
+                </span>
+                <span>{genProgress.done}/{genProgress.total} done</span>
+              </div>
+              <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-accent rounded-full transition-all duration-300"
+                  style={{ width: `${genProgress.total > 0 ? (genProgress.done / genProgress.total) * 100 : 0}%` }}
+                />
+              </div>
+              <p className="text-[11px] text-slate-400">
+                The audit-personalization step is slow (it's an AI call per lead) — already-generated emails below are ready to review while the rest finish.
+              </p>
             </div>
           )}
 
@@ -128,7 +196,30 @@ export function BulkAuditOutreachModal({ leadIds, onClose, onSent }: BulkAuditOu
             </div>
           )}
 
-          {!loading && !error && drafts.map((d) => (
+          {genErrors.map((e) => (
+            <div
+              key={e.leadId}
+              className="flex items-center justify-between gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-xl p-3"
+            >
+              <span className="flex items-center gap-2 min-w-0">
+                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate">Failed to generate this lead's email: {e.message}</span>
+              </span>
+              <button
+                onClick={() => handleRetry(e.leadId)}
+                disabled={retryingIds.has(e.leadId)}
+                className="shrink-0 px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg cursor-pointer disabled:opacity-50 flex items-center gap-1"
+              >
+                {retryingIds.has(e.leadId) ? (
+                  <span className="w-3 h-3 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                ) : (
+                  "Retry"
+                )}
+              </button>
+            </div>
+          ))}
+
+          {!error && drafts.map((d) => (
             <div key={d.leadId} className="border border-slate-200 rounded-xl p-4 space-y-2.5">
               <div className="flex items-center justify-between gap-2">
                 <label className="flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer">

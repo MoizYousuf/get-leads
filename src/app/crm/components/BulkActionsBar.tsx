@@ -2,7 +2,7 @@
 
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Mail, ChevronDown, Trash2 } from "lucide-react";
+import { Mail, ChevronDown, Trash2, Sparkles } from "lucide-react";
 import { CRM_STATUSES } from "./types";
 
 interface BulkActionsBarProps {
@@ -13,6 +13,7 @@ interface BulkActionsBarProps {
   handleBulkEmailComposerRedirect: () => void;
   handleBulkStatusChange: (status: string) => void;
   handleBulkDelete: () => void;
+  onOpenAuditOutreach?: () => void;
 }
 
 export function BulkActionsBar({
@@ -22,7 +23,8 @@ export function BulkActionsBar({
   setShowBulkMenu,
   handleBulkEmailComposerRedirect,
   handleBulkStatusChange,
-  handleBulkDelete
+  handleBulkDelete,
+  onOpenAuditOutreach
 }: BulkActionsBarProps) {
   return (
     <AnimatePresence>
@@ -48,6 +50,17 @@ export function BulkActionsBar({
               <Mail className="w-3.5 h-3.5 stroke-[2.5]" />
               Send Bulk Email
             </button>
+
+            {onOpenAuditOutreach && (
+              <button
+                onClick={onOpenAuditOutreach}
+                className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-black rounded-lg transition duration-200 flex items-center gap-1.5 cursor-pointer"
+                title="Generate a uniquely personalized email per lead using their website audit, then review before sending"
+              >
+                <Sparkles className="w-3.5 h-3.5 stroke-[2.5]" />
+                Audit & Personalize
+              </button>
+            )}
 
             <div className="relative">
               <button

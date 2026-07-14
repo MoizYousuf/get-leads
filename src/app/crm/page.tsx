@@ -8,6 +8,7 @@ import { Info, AlertCircle } from "lucide-react";
 import { PageHeader } from "./components/PageHeader";
 import { FilterBar } from "./components/FilterBar";
 import { BulkActionsBar } from "./components/BulkActionsBar";
+import { BulkAuditOutreachModal } from "./components/BulkAuditOutreachModal";
 import { OverdueAlertBanner } from "./components/OverdueAlertBanner";
 import { ProposalsSummary } from "./components/ProposalsSummary";
 import { TemplatePerformance } from "./components/TemplatePerformance";
@@ -70,6 +71,7 @@ export default function CRMDashboard() {
 
   // Selection state
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [showAuditOutreachModal, setShowAuditOutreachModal] = useState(false);
   const [showBulkMenu, setShowBulkMenu] = useState(false);
 
   // Manual Lead Dialog state
@@ -630,7 +632,19 @@ export default function CRMDashboard() {
         handleBulkEmailComposerRedirect={handleBulkEmailComposerRedirect}
         handleBulkStatusChange={handleBulkStatusChange}
         handleBulkDelete={handleBulkDelete}
+        onOpenAuditOutreach={() => setShowAuditOutreachModal(true)}
       />
+
+      {showAuditOutreachModal && (
+        <BulkAuditOutreachModal
+          leadIds={selectedIds}
+          onClose={() => setShowAuditOutreachModal(false)}
+          onSent={() => {
+            setSelectedIds([]);
+            fetchLeads();
+          }}
+        />
+      )}
 
       <OverdueAlertBanner
         leads={leads}

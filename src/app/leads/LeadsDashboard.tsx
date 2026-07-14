@@ -794,15 +794,29 @@ export default function LeadsDashboard() {
     router.push(`/?to=${qTo}&clientName=${qName}&contact_person=${qOwner}&city=${qCity}&industry=${qIndustry}&website=${qWebsite}&phone=${qPhone}&leadId=${lead.id}`);
   };
 
+  const confirmFallbackImport = (): boolean => {
+    try {
+      if (localStorage.getItem("khanani_suppress_fallback_warning") === "true") return true;
+    } catch (e) {
+      console.error(e);
+    }
+    const proceed = window.confirm(
+      "These results are simulated demo data (SERPAPI_API_KEY isn't configured), not real businesses. Importing them will add fake leads to your CRM. Continue anyway?\n\nClick OK once to proceed — you won't be asked again this browser."
+    );
+    if (proceed) {
+      try {
+        localStorage.setItem("khanani_suppress_fallback_warning", "true");
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    return proceed;
+  };
+
   const handleImportToCRM = async () => {
     if (selectedLeadIds.size === 0) return;
 
-    if (isFallback) {
-      const proceed = window.confirm(
-        "These results are simulated demo data (SERPAPI_API_KEY isn't configured), not real businesses. Importing them will add fake leads to your CRM. Continue anyway?"
-      );
-      if (!proceed) return;
-    }
+    if (isFallback && !confirmFallbackImport()) return;
 
     setIsImporting(true);
     try {
@@ -1021,11 +1035,7 @@ export default function LeadsDashboard() {
             handleEnrichLead={handleEnrichLead}
             enrichingIds={enrichingIds}
             onSaveToCrm={async (lead) => {
-              if (isFallback && !window.confirm(
-                "These results are simulated demo data (SERPAPI_API_KEY isn't configured), not a real business. Import this fake lead anyway?"
-              )) {
-                return;
-              }
+              if (isFallback && !confirmFallbackImport()) return;
               const res = await fetch("/api/crm/leads", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },

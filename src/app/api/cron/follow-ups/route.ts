@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Resend } from "resend";
 import { getSupabaseServerClient, isSupabaseConfigured } from "@/lib/supabase";
+import { generateEmailHtml } from "@/lib/templates";
 
 // Follow-up cadence: 3 days after the first touch, then 5 more days after that, then stop.
 const FOLLOW_UP_DELAYS_DAYS = [3, 5];
@@ -45,6 +47,13 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ success: false, error: "Failed to initialize Supabase client" }, { status: 500 });
   }
 
+  const resendApiKey = process.env.RESEND_API_KEY;
+  if (!resendApiKey) {
+    return NextResponse.json({ success: false, error: "RESEND_API_KEY is not configured." }, { status: 500 });
+  }
+  const resend = new Resend(resendApiKey);
+  const fromEmail = process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev";
+
   const { data: candidates, error } = await supabase
     .from("leads")
     .select("id, name, email, last_contacted_at, follow_up_count, replied_at")
@@ -58,40 +67,63 @@ export async function GET(req: NextRequest) {
   }
 
   const now = Date.now();
-  const results: { leadId: string; sent: boolean }[] = [];
-
-  for (const lead of candidates || []) {
+  const due = (candidates || []).filter((lead) => {
     const followUpCount = lead.follow_up_count || 0;
     const delayDays = FOLLOW_UP_DELAYS_DAYS[followUpCount];
-    const lastContacted = new Date(lead.last_contacted_at).getTime();
-    const daysSince = (now - lastContacted) / (1000 * 60 * 60 * 24);
+    const daysSince = (now - new Date(lead.last_contacted_at).getTime()) / (1000 * 60 * 60 * 24);
+    return daysSince >= delayDays;
+  });
 
-    if (daysSince < delayDays) continue;
+  // Send all due follow-ups concurrently instead of looping sequential HTTP round-trips.
+  const sendResults = await Promise.all(
+    due.map(async (lead) => {
+      const followUpCount = lead.follow_up_count || 0;
+      const { subject, body } = buildFollowUp(lead.name || "there", followUpCount + 1);
+      const html = generateEmailHtml(subject, body, false);
 
-    const { subject, body } = buildFollowUp(lead.name || "there", followUpCount + 1);
+      try {
+        const res = await resend.emails.send({
+          from: `Khanani Innovations <${fromEmail}>`,
+          to: [lead.email],
+          subject,
+          html,
+          text: body,
+        });
+        return { leadId: lead.id, sent: !res.error };
+      } catch {
+        return { leadId: lead.id, sent: false };
+      }
+    })
+  );
 
-    const sendRes = await fetch(new URL("/api/send-email", req.nextUrl.origin), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        to: lead.email,
-        subject,
-        body,
-        templateId: "auto-follow-up",
-        leadId: lead.id,
-      }),
-    });
-
-    const sent = sendRes.ok;
-    if (sent) {
-      await supabase
-        .from("leads")
-        .update({ follow_up_count: followUpCount + 1 })
-        .eq("id", lead.id);
-    }
-
-    results.push({ leadId: lead.id, sent });
+  // Batch the follow_up_count bump: group successfully-sent leads by their new count
+  // value so each distinct increment is a single `.in()` update instead of one per lead.
+  const sentByNewCount = new Map<number, string[]>();
+  for (const { leadId, sent } of sendResults) {
+    if (!sent) continue;
+    const lead = due.find((l) => l.id === leadId)!;
+    const newCount = (lead.follow_up_count || 0) + 1;
+    sentByNewCount.set(newCount, [...(sentByNewCount.get(newCount) || []), leadId]);
   }
 
-  return NextResponse.json({ success: true, processed: results.length, results });
+  await Promise.all(
+    Array.from(sentByNewCount.entries()).map(([newCount, leadIds]) =>
+      supabase.from("leads").update({ follow_up_count: newCount }).in("id", leadIds)
+    )
+  );
+
+  const sentActivities = sendResults
+    .filter((r) => r.sent)
+    .map((r) => ({
+      lead_id: r.leadId,
+      type: "email_sent",
+      title: "Automated follow-up sent",
+      description: "auto-follow-up",
+      metadata: {},
+    }));
+  if (sentActivities.length > 0) {
+    await supabase.from("activities").insert(sentActivities);
+  }
+
+  return NextResponse.json({ success: true, processed: sendResults.length, results: sendResults });
 }

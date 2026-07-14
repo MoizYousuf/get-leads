@@ -118,7 +118,6 @@ export default function CRMDashboard() {
         setLeads(data.data || []);
         setTotalLeads(data.pagination.total);
         setTotalPages(data.pagination.totalPages);
-        fetchProposals();
       }
     } catch (err: any) {
       console.error(err);

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { findLeads as getMockLeads } from "@/lib/leadsData";
-import { getCachedLead, setCachedLead } from "@/lib/leadsCache";
+import { getCachedLead, setCachedLead, wasRecentlyCheckedWithNoEmail, markLeadCheckedNoEmail } from "@/lib/leadsCache";
 import { getSupabaseServerClient, isSupabaseConfigured } from "@/lib/supabase";
 
 async function appendCRMStatus(leads: any[]): Promise<any[]> {
@@ -106,10 +106,13 @@ async function extractEmailFromWebsite(url: string): Promise<string | null> {
   const homeEmails = await fetchEmailsFromPage(cleanUrl);
   if (homeEmails.length > 0) return homeEmails[0];
 
-  // Homepage had nothing usable — most businesses put contact emails on these subpages
+  // Homepage had nothing usable — most businesses put contact emails on these subpages.
+  // Fetch all candidates in parallel instead of serially awaiting each one.
   const candidatePaths = ["/contact", "/contact-us", "/about", "/about-us"];
-  for (const path of candidatePaths) {
-    const emails = await fetchEmailsFromPage(`${cleanUrl}${path}`);
+  const subpageResults = await Promise.all(
+    candidatePaths.map((path) => fetchEmailsFromPage(`${cleanUrl}${path}`))
+  );
+  for (const emails of subpageResults) {
     if (emails.length > 0) return emails[0];
   }
 
@@ -270,6 +273,21 @@ export async function GET(req: NextRequest) {
         if (lead.email) return lead;
       }
 
+      // Skip re-crawling/re-enriching a business we already checked recently with no result
+      if (wasRecentlyCheckedWithNoEmail(lead.placeId, lead.name, lead.city)) {
+        if (lead.website) {
+          const domain = lead.website.replace(/^https?:\/\//, "").replace(/^www\./, "").replace(/\/.*$/, "");
+          if (domain) {
+            lead.email = `info@${domain}`;
+            lead.emailSource = "guess";
+            return lead;
+          }
+        }
+        lead.email = "";
+        lead.emailSource = null;
+        return lead;
+      }
+
       // 2. Live crawl of homepage + contact/about pages if website exists
       if (lead.website) {
         const email = await extractEmailFromWebsite(lead.website);
@@ -289,6 +307,9 @@ export async function GET(req: NextRequest) {
         setCachedLead(lead.placeId, lead.name, lead.city, { email: enrichedEmail });
         return lead;
       }
+
+      // No email found via crawl or SerpApi — remember this so repeat searches skip re-checking
+      markLeadCheckedNoEmail(lead.placeId, lead.name, lead.city);
 
       // 4. Last resort: guess a generic inbox off the known domain (clearly flagged as low-confidence)
       if (lead.website) {

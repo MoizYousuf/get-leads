@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseServerClient, isSupabaseConfigured } from "@/lib/supabase";
+import { runWebsiteAudit } from "@/lib/websiteAudit";
 
 // GET - Retrieve leads with filters, search, sorting, and pagination
 export async function GET(req: NextRequest) {
@@ -182,6 +183,23 @@ export async function POST(req: NextRequest) {
         }));
 
         await supabase.from("activities").insert(activities);
+
+        // Auto-run a website health audit for any newly imported lead that has a
+        // website, so the screenshot/diagnostics are ready before you ever open the
+        // lead detail page. Awaited (not fire-and-forget) since a serverless function
+        // isn't guaranteed to keep running background work after it responds.
+        // Best-effort per-lead — one audit failing shouldn't fail the import.
+        const leadsWithWebsite = data.filter((lead: any) => lead.website);
+        if (leadsWithWebsite.length > 0) {
+          const results = await Promise.allSettled(
+            leadsWithWebsite.map((lead: any) => runWebsiteAudit(lead, supabase))
+          );
+          results.forEach((r, i) => {
+            if (r.status === "rejected") {
+              console.error(`Auto-audit failed for lead ${leadsWithWebsite[i].id}:`, r.reason);
+            }
+          });
+        }
       }
 
       return NextResponse.json({
@@ -229,6 +247,14 @@ export async function POST(req: NextRequest) {
         title: "Lead Created",
         description: "Lead added manually to the CRM."
       });
+
+      if (data.website) {
+        try {
+          await runWebsiteAudit(data, supabase);
+        } catch (err) {
+          console.error(`Auto-audit failed for lead ${data.id}:`, err);
+        }
+      }
 
       return NextResponse.json({
         success: true,

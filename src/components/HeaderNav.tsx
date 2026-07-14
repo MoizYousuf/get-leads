@@ -254,15 +254,21 @@ export default function HeaderNav() {
                     </p>
                     <div className="bg-slate-50 p-4 rounded-xl border border-slate-150 space-y-2.5">
                       <div className="text-xs font-bold text-slate-500">Recommended Template: Website Creation Proposal</div>
-                      <div className="text-xs text-sky-600 font-mono">Subject: Building a professional website for [Business Name] - Khanani Innovations</div>
+                      <div className="text-xs text-sky-600 font-mono">Subject: [Business Name], you're losing customers to competitors with a website</div>
                       <div className="text-xs border-t border-slate-200 pt-2.5 text-slate-600 italic space-y-2">
-                        <p>"I noticed that your business is currently operating without an active website.</p>
-                        <p>At Khanani Innovations (<a href="https://khananiinnovations.com" target="_blank" className="text-sky-600 underline">khananiinnovations.com</a>), we build clean, modern, and mobile-friendly websites designed to attract local clients. We can set up a beautiful landing page, contact forms, and lead collection workflows for [Business Name] in just a few days.</p>
-                        <p>Would you be open to a quick, complimentary discussion about how we can establish your online presence?"</p>
+                        <p>"While researching businesses in [City], I noticed you don't have a website yet — which likely means potential customers searching Google right now are landing on your competitors instead of you.</p>
+                        <p>I'm Khanani Innovations (<a href="https://khananiinnovations.com" target="_blank" className="text-sky-600 underline">khananiinnovations.com</a>) — we design and build fast, mobile-first websites for local businesses, complete with contact forms and click-to-call, live in about a week.</p>
+                        <p>I'd like to offer you a free, no-obligation mockup — no cost, no commitment. Would you be open to a quick 10-minute call this week?"</p>
                       </div>
                     </div>
                     <div className="bg-sky-50 p-4 rounded-xl border border-sky-100 text-xs text-sky-700">
                       <strong>💡 Playbook Tip:</strong> Mentioning your website link (<a href="https://khananiinnovations.com" target="_blank" className="underline font-bold text-sky-600">khananiinnovations.com</a>) inside the email is critical. Leads will visit your site to review your portfolio before replying. It establishes instant authority and credibility.
+                    </div>
+                    <div className="bg-emerald-50 p-4 rounded-xl border border-emerald-100 text-xs text-emerald-700">
+                      <strong>🖼️ New: Screenshot attachments.</strong> When a lead has a website, tick "Attach a live screenshot" in the composer — a real screenshot of their site gets embedded in the email. Personalized visuals get noticeably more replies than plain text.
+                    </div>
+                    <div className="bg-amber-50 p-4 rounded-xl border border-amber-100 text-xs text-amber-700">
+                      <strong>🔁 New: Automatic follow-ups.</strong> Once a lead is imported into the CRM and emailed, the system automatically sends a follow-up after 3 days of silence, and one final nudge 5 days after that — then stops. It stops immediately the moment they reply. You don't have to manually track or re-send anything.
                     </div>
                   </motion.div>
                 )}

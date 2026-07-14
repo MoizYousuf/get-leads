@@ -19,6 +19,8 @@ CREATE TABLE IF NOT EXISTS leads (
     last_contacted_at TIMESTAMPTZ,
     follow_up_count INT DEFAULT 0,
     replied_at TIMESTAMPTZ,
+    bounced_at TIMESTAMPTZ,
+    complained_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now()
 );
@@ -27,6 +29,8 @@ CREATE TABLE IF NOT EXISTS leads (
 ALTER TABLE leads ADD COLUMN IF NOT EXISTS last_contacted_at TIMESTAMPTZ;
 ALTER TABLE leads ADD COLUMN IF NOT EXISTS follow_up_count INT DEFAULT 0;
 ALTER TABLE leads ADD COLUMN IF NOT EXISTS replied_at TIMESTAMPTZ;
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS bounced_at TIMESTAMPTZ;
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS complained_at TIMESTAMPTZ;
 
 -- Create index on search and filter columns for performance
 CREATE INDEX IF NOT EXISTS idx_leads_status ON leads(status);

@@ -58,6 +58,8 @@ export async function GET(req: NextRequest) {
     .from("leads")
     .select("id, name, email, last_contacted_at, follow_up_count, replied_at")
     .is("replied_at", null)
+    .is("bounced_at", null)
+    .is("complained_at", null)
     .not("last_contacted_at", "is", null)
     .not("email", "is", null)
     .lt("follow_up_count", FOLLOW_UP_DELAYS_DAYS.length);

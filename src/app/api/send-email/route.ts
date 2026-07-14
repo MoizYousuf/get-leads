@@ -27,6 +27,26 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Never re-email an address that has filed a spam complaint — resending damages
+    // sender reputation/deliverability for every other email you send from this domain.
+    if (isSupabaseConfigured()) {
+      const supabase = getSupabaseServerClient();
+      if (supabase) {
+        const { data: complained } = await supabase
+          .from("leads")
+          .select("id")
+          .eq("email", to)
+          .not("complained_at", "is", null)
+          .maybeSingle();
+        if (complained) {
+          return NextResponse.json(
+            { error: "This recipient previously marked an email as spam. Sending was blocked to protect domain deliverability.", code: "RECIPIENT_COMPLAINED" },
+            { status: 403 }
+          );
+        }
+      }
+    }
+
     const resend = getResendClient();
     if (!resend) {
       return NextResponse.json(

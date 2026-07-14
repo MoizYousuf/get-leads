@@ -1,5 +1,6 @@
 import { SupabaseClient } from "@supabase/supabase-js";
 import { getScreenshotUrl } from "@/lib/screenshot";
+import { runPageSpeedAudit } from "@/lib/pagespeed";
 
 interface AuditableLead {
   id: string;
@@ -12,6 +13,17 @@ interface AuditableLead {
 interface AuditData {
   scores: { performance: number; seo: number; mobile: number; overall: number };
   findings: { bugs: string[]; recommendations: string[]; seoKeywords: string[] };
+}
+
+function simulatedSeoKeywords(lead: AuditableLead): string[] {
+  const ind = lead.industry || "local business";
+  const city = lead.city || "your city";
+  return [
+    `${lead.name} ${city}`,
+    `best ${ind} in ${city}`,
+    `affordable ${ind} services near me`,
+    `${ind} contractor ${city}`
+  ];
 }
 
 function simulatedAuditData(lead: AuditableLead): AuditData {
@@ -114,15 +126,38 @@ Output the JSON object now:`;
 }
 
 /**
- * Runs a full website health audit (screenshot + AI/simulated diagnostics) for a lead
- * and upserts the result into website_audits, logging an activity timeline entry.
- * Used both by the manual "Run Audit" button and automatically on CRM import.
+ * Runs a full website health audit (screenshot + diagnostics) for a lead and upserts
+ * the result into website_audits, logging an activity timeline entry. Used both by
+ * the manual "Run Audit" button and automatically on CRM import.
+ *
+ * Prefers real Google PageSpeed Insights (Lighthouse) data — genuine scores and real
+ * failing checks, not fabricated — when PAGESPEED_API_KEY is configured. Falls back to
+ * AI-generated/simulated diagnostics otherwise. SEO keyword suggestions always come
+ * from Gemini/simulated since PageSpeed doesn't provide them.
  */
 export async function runWebsiteAudit(lead: AuditableLead, supabase: SupabaseClient): Promise<void> {
   if (!lead.website) return;
 
   const screenshot_url = getScreenshotUrl(lead.website);
-  const auditData = await generateAuditData(lead);
+  const pageSpeedResult = await runPageSpeedAudit(lead.website);
+
+  let auditData: AuditData;
+  let isRealData: boolean;
+
+  if (pageSpeedResult) {
+    isRealData = true;
+    auditData = {
+      scores: pageSpeedResult.scores,
+      findings: {
+        bugs: pageSpeedResult.findings.bugs,
+        recommendations: pageSpeedResult.findings.recommendations,
+        seoKeywords: simulatedSeoKeywords(lead)
+      }
+    };
+  } else {
+    isRealData = false;
+    auditData = await generateAuditData(lead);
+  }
 
   await supabase.from("website_audits").upsert(
     {
@@ -139,7 +174,7 @@ export async function runWebsiteAudit(lead: AuditableLead, supabase: SupabaseCli
     lead_id: lead.id,
     type: "updated",
     title: "Website Audited",
-    description: `Completed AI Website Health Audit for ${lead.website || lead.name}. Overall Score: ${auditData.scores.overall}/100.`,
-    metadata: { scores: auditData.scores, website: lead.website }
+    description: `Completed ${isRealData ? "real PageSpeed" : "AI"} Website Health Audit for ${lead.website || lead.name}. Overall Score: ${auditData.scores.overall}/100.`,
+    metadata: { scores: auditData.scores, website: lead.website, isRealData }
   });
 }

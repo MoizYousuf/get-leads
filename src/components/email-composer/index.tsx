@@ -71,6 +71,7 @@ export default function EmailComposer() {
 
   // Send delay config (seconds)
   const [sendDelay, setSendDelay] = useState(3);
+  const [includeScreenshot, setIncludeScreenshot] = useState(false);
 
   // State for email sending progress
   const [sendState, setSendState] = useState<"idle" | "sending" | "success" | "error">("idle");
@@ -251,7 +252,7 @@ export default function EmailComposer() {
         setSendState("error");
         return;
       }
-      recipients = [{ email: to, name: clientName }];
+      recipients = [{ email: to, name: clientName, website: activeLeadDetails?.website }];
     } else {
       recipients = parseBulkRecipients(bulkRecipientsText);
       if (recipients.length === 0) {
@@ -312,11 +313,14 @@ export default function EmailComposer() {
         const res = await fetch("/api/send-email", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ 
-            to: recipient.email, 
-            subject: compiledSubject, 
-            body: compiledBody, 
-            templateId: selectedTemplateId 
+          body: JSON.stringify({
+            to: recipient.email,
+            subject: compiledSubject,
+            body: compiledBody,
+            templateId: selectedTemplateId,
+            leadId: sendMode === "single" ? leadId : undefined,
+            websiteUrl: recipient.website || undefined,
+            includeScreenshot: includeScreenshot && !!recipient.website,
           }),
         });
 
@@ -529,7 +533,7 @@ export default function EmailComposer() {
   return (
     <div className="space-y-4">
       {/* Mobile Tab Switcher */}
-      <div className="flex p-1 bg-slate-100 rounded-2xl lg:hidden">
+      <div className="flex p-1 bg-slate-100 rounded-2xl md:hidden">
         <button
           type="button"
           onClick={() => setMobileTab("compose")}
@@ -554,10 +558,10 @@ export default function EmailComposer() {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
         
         {/* LEFT COLUMN: Composer Form & Template Selection */}
-        <div className={`lg:col-span-7 space-y-4 ${mobileTab === "compose" ? "block" : "hidden lg:block"}`}>
+        <div className={`md:col-span-7 space-y-4 ${mobileTab === "compose" ? "block" : "hidden md:block"}`}>
         
         {/* Step 1: Select Email Template */}
         <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm transition-all duration-300 hover:border-slate-300">
@@ -605,7 +609,7 @@ export default function EmailComposer() {
               className={`flex-1 py-3.5 font-bold flex items-center justify-center gap-2 cursor-pointer transition border-b-2 duration-300 ${
                 sendMode === "single"
                   ? "border-sky-500 text-sky-600 bg-white"
-                  : "border-transparent text-slate-400 hover:text-slate-700"
+                  : "border-transparent text-slate-500 hover:text-slate-700"
               }`}
             >
               <User className="w-4 h-4" />
@@ -617,7 +621,7 @@ export default function EmailComposer() {
               className={`flex-1 py-3.5 font-bold flex items-center justify-center gap-2 cursor-pointer transition border-b-2 duration-300 ${
                 sendMode === "bulk"
                   ? "border-sky-500 text-sky-600 bg-white"
-                  : "border-transparent text-slate-400 hover:text-slate-700"
+                  : "border-transparent text-slate-500 hover:text-slate-700"
               }`}
             >
               <Users className="w-4 h-4" />
@@ -642,7 +646,7 @@ export default function EmailComposer() {
                 <button
                   type="button"
                   onClick={() => setRightPanelTab("ai")}
-                  className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-550 text-[10px] font-black text-slate-100 rounded-xl transition duration-200 shadow-md cursor-pointer flex items-center gap-1 shrink-0"
+                  className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-[10px] font-black text-white rounded-xl transition duration-200 shadow-md cursor-pointer flex items-center gap-1 shrink-0"
                 >
                   Open AI Generator
                 </button>
@@ -669,6 +673,17 @@ export default function EmailComposer() {
               />
             )}
 
+            <label className="flex items-center gap-2 text-xs font-medium text-slate-600 select-none cursor-pointer">
+              <input
+                type="checkbox"
+                checked={includeScreenshot}
+                onChange={(e) => setIncludeScreenshot(e.target.checked)}
+                disabled={sendState === "sending"}
+                className="h-4 w-4 rounded border-slate-300 text-accent focus:ring-accent"
+              />
+              Attach a live screenshot of the recipient&apos;s website (when a website URL is known)
+            </label>
+
             {/* Common Inputs */}
             <div className="space-y-1.5">
               <div className="flex justify-between items-center">
@@ -678,9 +693,9 @@ export default function EmailComposer() {
                 <button
                   type="button"
                   onClick={() => setRightPanelTab("ai")}
-                  className="text-[10px] text-indigo-400 hover:text-indigo-355 font-bold transition flex items-center gap-1 cursor-pointer"
+                  className="text-[10px] text-indigo-600 hover:text-indigo-355 font-bold transition flex items-center gap-1 cursor-pointer"
                 >
-                  <Sparkles className="w-3 h-3 text-indigo-400 animate-pulse" />
+                  <Sparkles className="w-3 h-3 text-indigo-600 animate-pulse" />
                   Generate with AI
                 </button>
               </div>
@@ -704,9 +719,9 @@ export default function EmailComposer() {
                 <button
                   type="button"
                   onClick={() => setRightPanelTab("ai")}
-                  className="text-[10px] text-indigo-400 hover:text-indigo-355 font-bold transition flex items-center gap-1 cursor-pointer"
+                  className="text-[10px] text-indigo-600 hover:text-indigo-355 font-bold transition flex items-center gap-1 cursor-pointer"
                 >
-                  <Sparkles className="w-3 h-3 text-indigo-400 animate-pulse" />
+                  <Sparkles className="w-3 h-3 text-indigo-600 animate-pulse" />
                   Generate with AI
                 </button>
               </div>
@@ -745,18 +760,17 @@ export default function EmailComposer() {
           </form>
         </div>
         </div>
-      </div>
 
-      {/* RIGHT COLUMN: Preview & AI Assist */}
-      <div className={`lg:col-span-5 space-y-4 ${mobileTab === "preview" ? "block" : "hidden lg:block"}`}>
-        <div className="bg-slate-100 border border-slate-200 rounded-2xl p-1 flex items-center gap-1 shadow-inner">
+      {/* RIGHT COLUMN: Preview & AI Assist — pinned in view while the left form scrolls */}
+      <div className={`md:col-span-5 space-y-4 md:sticky md:top-24 md:self-start ${mobileTab === "preview" ? "block" : "hidden md:block"}`}>
+        <div className="bg-white border border-slate-200 rounded-2xl p-1.5 flex items-center gap-1 shadow-sm">
           <button
             type="button"
             onClick={() => setRightPanelTab("preview")}
             className={`flex-1 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer ${
               rightPanelTab === "preview"
-                ? "bg-white text-indigo-600 border border-slate-200 shadow-sm"
-                : "text-slate-500 hover:text-slate-700"
+                ? "bg-sky-50 text-indigo-600 border border-sky-200 shadow-sm"
+                : "text-slate-500 hover:text-slate-700 border border-transparent"
             }`}
           >
             <ExternalLink className="w-3.5 h-3.5" />
@@ -767,8 +781,8 @@ export default function EmailComposer() {
             onClick={() => setRightPanelTab("ai")}
             className={`flex-1 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer ${
               rightPanelTab === "ai"
-                ? "bg-white text-indigo-600 border border-slate-200 shadow-sm"
-                : "text-slate-500 hover:text-slate-700"
+                ? "bg-sky-50 text-indigo-600 border border-sky-200 shadow-sm"
+                : "text-slate-500 hover:text-slate-700 border border-transparent"
             }`}
           >
             <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
@@ -793,6 +807,7 @@ export default function EmailComposer() {
         )}
       </div>
 
+      </div>
     </div>
   );
 }
@@ -869,11 +884,11 @@ function AIAssistPanel({ activeLead, onApply }: AIAssistPanelProps) {
     <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-indigo-400" />
+          <Sparkles className="w-4 h-4 text-indigo-600" />
           AI Outreach Pitch Generator
         </h3>
         {activeLead && (
-          <span className="text-[9px] font-bold bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 rounded-full text-indigo-400">
+          <span className="text-[9px] font-bold bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 rounded-full text-indigo-600">
             Lead Loaded
           </span>
         )}
@@ -961,7 +976,7 @@ function AIAssistPanel({ activeLead, onApply }: AIAssistPanelProps) {
           type="button"
           onClick={handleGenerate}
           disabled={isGenerating || !name}
-          className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-800 disabled:text-slate-500 text-slate-100 font-bold py-2.5 rounded-xl text-xs transition duration-200 cursor-pointer shadow-lg flex items-center justify-center gap-1.5"
+          className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-100 disabled:text-slate-500 text-white font-bold py-2.5 rounded-xl text-xs transition duration-200 cursor-pointer shadow-lg flex items-center justify-center gap-1.5"
         >
           {isGenerating ? (
             <>
@@ -970,7 +985,7 @@ function AIAssistPanel({ activeLead, onApply }: AIAssistPanelProps) {
             </>
           ) : (
             <>
-              <Sparkles className="w-3.5 h-3.5 text-slate-100" />
+              <Sparkles className="w-3.5 h-3.5 text-slate-900" />
               Generate Pitch
             </>
           )}
@@ -985,7 +1000,7 @@ function AIAssistPanel({ activeLead, onApply }: AIAssistPanelProps) {
 
         {/* Output Area */}
         {result && (
-          <div className="space-y-3 pt-3 border-t border-slate-850/80">
+          <div className="space-y-3 pt-3 border-t border-slate-200">
             {isSimulated && (
               <div className="text-[9px] bg-amber-500/10 border border-amber-500/20 text-amber-400 p-2 rounded-lg leading-relaxed">
                 ⚠️ <strong>GEMINI_API_KEY</strong> is missing from .env. The pitch below is generated using a local high-converting copywriter template. Set up a key in your environment to fetch real AI generation.
@@ -1006,7 +1021,7 @@ function AIAssistPanel({ activeLead, onApply }: AIAssistPanelProps) {
             <button
               type="button"
               onClick={() => onApply(result.subject, result.body)}
-              className="w-full bg-emerald-600 hover:bg-emerald-500 text-slate-100 font-black py-2 rounded-xl text-xs transition duration-200 cursor-pointer shadow-md"
+              className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-2 rounded-xl text-xs transition duration-200 cursor-pointer shadow-md"
             >
               Apply Pitch to Composer
             </button>

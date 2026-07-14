@@ -14,10 +14,10 @@ interface TemplatePreviewProps {
 
 export default function TemplatePreview({ preview, sendMode }: TemplatePreviewProps) {
   return (
-    <div className="space-y-4 lg:sticky lg:top-24">
+    <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h2 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-          <Eye className="w-4 h-4 text-sky-400" />
+        <h2 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+          <Eye className="w-4 h-4 text-sky-500" />
           Live Client Preview
         </h2>
         <span className="text-[10px] bg-slate-100 border border-slate-200 text-slate-500 px-2 py-0.5 rounded">
@@ -64,7 +64,7 @@ export default function TemplatePreview({ preview, sendMode }: TemplatePreviewPr
             {/* Email Content Frame */}
             <div className="p-6 md:p-8 space-y-6">
               {/* Body inside email */}
-              <div className="text-sm leading-relaxed text-slate-650 whitespace-pre-wrap font-sans">
+              <div className="text-sm leading-relaxed text-slate-600 whitespace-pre-wrap font-sans">
                 {preview.body || "Write your message details to preview how the client will read it..."}
               </div>
 
@@ -79,7 +79,7 @@ export default function TemplatePreview({ preview, sendMode }: TemplatePreviewPr
               <div className="pt-6 border-t border-slate-100">
                 <p className="m-0 text-xs font-semibold text-slate-500">Best regards,</p>
                 <p className="mt-1.5 mb-0.5 text-sm font-black text-indigo-600">Khanani Innovations Team</p>
-                <p className="m-0 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Web Development & Automation Solutions</p>
+                <p className="m-0 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Web Development & Automation Solutions</p>
                 <p className="mt-1 mb-0 text-xs text-sky-600 font-semibold">
                   <a href="https://khananiinnovations.com" target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="hover:underline">
                     khananiinnovations.com
@@ -90,7 +90,7 @@ export default function TemplatePreview({ preview, sendMode }: TemplatePreviewPr
           </div>
 
           {/* Footer inside email */}
-          <div className="bg-slate-50 px-6 py-6 border-t border-slate-100 text-center text-[10px] text-slate-400 leading-normal">
+          <div className="bg-slate-50 px-6 py-6 border-t border-slate-100 text-center text-[10px] text-slate-500 leading-normal">
             <p className="m-0 font-medium">&copy; {new Date().getFullYear()} Khanani Innovations. All rights reserved.</p>
             <p className="mt-1 mb-0">You are receiving this email as business outreach. If you prefer not to receive further emails, reply "Unsubscribe".</p>
           </div>
@@ -98,7 +98,7 @@ export default function TemplatePreview({ preview, sendMode }: TemplatePreviewPr
       </div>
 
       <div className="flex gap-2.5 p-4 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-500">
-        <Info className="w-4 h-4 text-sky-400 shrink-0 mt-0.5" />
+        <Info className="w-4 h-4 text-sky-500 shrink-0 mt-0.5" />
         <div className="space-y-1">
           <p className="font-bold text-slate-700">Available Placeholders:</p>
           <ul className="list-disc pl-4 space-y-0.5 leading-normal">

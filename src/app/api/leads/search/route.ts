@@ -30,46 +30,35 @@ async function appendCRMStatus(leads: any[]): Promise<any[]> {
   return leads;
 }
 
-// Helper to crawl a homepage and search for email addresses
-async function extractEmailFromWebsite(url: string): Promise<string | null> {
-  if (!url) return null;
-  
-  // Format/clean url
-  let cleanUrl = url;
-  if (!url.startsWith("http://") && !url.startsWith("https://")) {
-    cleanUrl = `https://${url}`;
-  }
-
+// Helper to fetch a single page and pull email addresses out of it
+async function fetchEmailsFromPage(pageUrl: string): Promise<string[]> {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 2500); // 2.5 second timeout
+  const timeoutId = setTimeout(() => controller.abort(), 2500); // 2.5 second timeout per page
 
   try {
-    const res = await fetch(cleanUrl, {
+    const res = await fetch(pageUrl, {
       signal: controller.signal,
       headers: {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8"
       }
     });
-    
-    clearTimeout(timeoutId);
-    if (!res.ok) return null;
+
+    if (!res.ok) return [];
 
     const html = await res.text();
-    
+    const foundEmails = new Set<string>();
+
     // Look for mailto: links first as they are highly accurate
     const mailtoRegex = /href="mailto:([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/gi;
     let match;
-    const foundEmails = new Set<string>();
-
     while ((match = mailtoRegex.exec(html)) !== null) {
       if (match[1]) {
         foundEmails.add(match[1].toLowerCase().trim());
       }
     }
-
     if (foundEmails.size > 0) {
-      return Array.from(foundEmails)[0];
+      return Array.from(foundEmails);
     }
 
     // General email regex scan in text
@@ -95,12 +84,57 @@ async function extractEmailFromWebsite(url: string): Promise<string | null> {
       }
     }
 
-    return foundEmails.size > 0 ? Array.from(foundEmails)[0] : null;
+    return Array.from(foundEmails);
   } catch (error) {
     // Gracefully capture network or timeout abort exceptions
-    return null;
+    return [];
   } finally {
     clearTimeout(timeoutId);
+  }
+}
+
+// Crawl a business's homepage, and if that comes up empty, try common contact/about pages
+async function extractEmailFromWebsite(url: string): Promise<string | null> {
+  if (!url) return null;
+
+  let cleanUrl = url;
+  if (!url.startsWith("http://") && !url.startsWith("https://")) {
+    cleanUrl = `https://${url}`;
+  }
+  cleanUrl = cleanUrl.replace(/\/+$/, "");
+
+  const homeEmails = await fetchEmailsFromPage(cleanUrl);
+  if (homeEmails.length > 0) return homeEmails[0];
+
+  // Homepage had nothing usable — most businesses put contact emails on these subpages
+  const candidatePaths = ["/contact", "/contact-us", "/about", "/about-us"];
+  for (const path of candidatePaths) {
+    const emails = await fetchEmailsFromPage(`${cleanUrl}${path}`);
+    if (emails.length > 0) return emails[0];
+  }
+
+  return null;
+}
+
+const EMAIL_REGEX = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/;
+
+// Second-pass lookup via SerpApi organic Google search when a homepage/contact-page crawl finds nothing
+async function enrichEmailViaSerpApi(name: string, city: string, apiKey: string): Promise<string | null> {
+  try {
+    const query = `${name} ${city} contact email`;
+    const searchUrl = `https://serpapi.com/search.json?engine=google&q=${encodeURIComponent(query)}&api_key=${apiKey}`;
+    const res = await fetch(searchUrl);
+    const data = await res.json();
+    if (data.error) return null;
+
+    for (const r of data.organic_results || []) {
+      const textToSearch = `${r.title || ""} ${r.snippet || ""}`;
+      const emailMatch = textToSearch.match(EMAIL_REGEX);
+      if (emailMatch && emailMatch[0]) return emailMatch[0].toLowerCase().trim();
+    }
+    return null;
+  } catch {
+    return null;
   }
 }
 
@@ -210,7 +244,8 @@ export async function GET(req: NextRequest) {
         industry: query.split(" in ")[0]?.trim() || "Business",
         city,
         placeId: listing.place_id || null,
-        address: listing.address || null
+        address: listing.address || null,
+        emailSource: null as "crawl" | "enrich" | "guess" | null
       });
     }
 
@@ -222,28 +257,51 @@ export async function GET(req: NextRequest) {
       filteredLeads = formattedLeads.filter(l => l.website === null);
     }
 
-    // Crawl emails concurrently for entries with websites
+    // Resolve emails concurrently: cache -> website crawl (homepage + contact/about) -> SerpApi search -> domain guess
     const crawlPromises = filteredLeads.map(async (lead) => {
       // 1. Check local cache first
       const cached = getCachedLead(lead.placeId, lead.name, lead.city);
       if (cached) {
-        if (cached.email) lead.email = cached.email;
+        if (cached.email) {
+          lead.email = cached.email;
+          lead.emailSource = "crawl";
+        }
         if (cached.phone && (lead.phone === "N/A" || !lead.phone)) lead.phone = cached.phone;
         if (lead.email) return lead;
       }
 
-      // 2. Live crawl if cache is empty
+      // 2. Live crawl of homepage + contact/about pages if website exists
       if (lead.website) {
         const email = await extractEmailFromWebsite(lead.website);
         if (email) {
           lead.email = email;
+          lead.emailSource = "crawl";
           setCachedLead(lead.placeId, lead.name, lead.city, { email });
-        } else {
-          lead.email = "";
+          return lead;
         }
-      } else {
-        lead.email = "";
       }
+
+      // 3. Fall back to a SerpApi organic search for a publicly listed contact email
+      const enrichedEmail = await enrichEmailViaSerpApi(lead.name, lead.city, apiKey);
+      if (enrichedEmail) {
+        lead.email = enrichedEmail;
+        lead.emailSource = "enrich";
+        setCachedLead(lead.placeId, lead.name, lead.city, { email: enrichedEmail });
+        return lead;
+      }
+
+      // 4. Last resort: guess a generic inbox off the known domain (clearly flagged as low-confidence)
+      if (lead.website) {
+        const domain = lead.website.replace(/^https?:\/\//, "").replace(/^www\./, "").replace(/\/.*$/, "");
+        if (domain) {
+          lead.email = `info@${domain}`;
+          lead.emailSource = "guess";
+          return lead;
+        }
+      }
+
+      lead.email = "";
+      lead.emailSource = null;
       return lead;
     });
 

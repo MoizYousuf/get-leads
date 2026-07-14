@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 import { generateEmailHtml } from "@/lib/templates";
+import { fetchScreenshotBase64 } from "@/lib/screenshot";
+import { getSupabaseServerClient, isSupabaseConfigured } from "@/lib/supabase";
 import fs from "fs";
 import path from "path";
 
@@ -15,7 +17,7 @@ const getResendClient = () => {
 
 export async function POST(req: NextRequest) {
   try {
-    const { to, subject, body, templateId } = await req.json();
+    const { to, subject, body, templateId, leadId, websiteUrl, includeScreenshot } = await req.json();
 
     // Basic Validation
     if (!to || !subject || !body) {
@@ -84,11 +86,33 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Optionally attach a live screenshot of the recipient's website as a visual hook
+    let screenshotCid: string | undefined = undefined;
+    let screenshotAttachment: { content: string; filename: string; contentId: string } | undefined = undefined;
+
+    if (includeScreenshot && websiteUrl) {
+      const screenshot = await fetchScreenshotBase64(websiteUrl);
+      if (screenshot) {
+        screenshotCid = "cid:website-preview";
+        screenshotAttachment = {
+          content: screenshot.base64,
+          filename: screenshot.filename,
+          contentId: "website-preview",
+        };
+      }
+    }
+
     // Generate HTML with branding
-    const htmlContent = generateEmailHtml(subject, body, hasLogo, logoUrl);
+    const htmlContent = generateEmailHtml(subject, body, hasLogo, logoUrl, screenshotCid);
 
     // Get sender email from env or default to onboarding@resend.dev
     const fromEmail = process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev";
+
+    const attachments = [logoAttachment, screenshotAttachment].filter(Boolean) as {
+      content: string;
+      filename: string;
+      contentId: string;
+    }[];
 
     // Call Resend API with inline attachments if applicable
     const response = await resend.emails.send({
@@ -97,7 +121,7 @@ export async function POST(req: NextRequest) {
       subject: subject,
       html: htmlContent,
       text: body,
-      attachments: logoAttachment ? [logoAttachment] : undefined,
+      attachments: attachments.length ? attachments : undefined,
     });
 
     if (response.error) {
@@ -105,6 +129,30 @@ export async function POST(req: NextRequest) {
         { error: response.error.message || "Failed to send email via Resend." },
         { status: 500 }
       );
+    }
+
+    // Track outreach on the CRM lead so the follow-up cron can pick it up, and
+    // log a timeline entry. Best-effort — a tracking failure shouldn't fail the send.
+    if (leadId && isSupabaseConfigured()) {
+      try {
+        const supabase = getSupabaseServerClient();
+        if (supabase) {
+          await supabase
+            .from("leads")
+            .update({ last_contacted_at: new Date().toISOString() })
+            .eq("id", leadId);
+
+          await supabase.from("activities").insert({
+            lead_id: leadId,
+            type: "email_sent",
+            title: "Outreach email sent",
+            description: subject,
+            metadata: { templateId: templateId || null },
+          });
+        }
+      } catch (trackErr) {
+        console.error("Failed to record email-sent tracking:", trackErr);
+      }
     }
 
     return NextResponse.json({

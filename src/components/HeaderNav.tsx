@@ -61,10 +61,10 @@ export default function HeaderNav() {
           <div className="flex items-center gap-2 md:hidden">
             <button
               onClick={() => setShowPlaybook(true)}
-              className="p-2 bg-sky-50 hover:bg-sky-100 text-sky-600 border border-sky-100 rounded-xl text-xs font-bold cursor-pointer transition-all active:scale-95"
+              className="min-w-11 min-h-11 flex items-center justify-center bg-sky-50 hover:bg-sky-100 text-sky-600 border border-sky-100 rounded-xl text-xs font-bold cursor-pointer transition-all active:scale-95"
               title="Outreach Playbook"
             >
-              <BookOpen className="w-4 h-4" />
+              <BookOpen className="w-4.5 h-4.5" />
             </button>
           </div>
  
@@ -110,30 +110,39 @@ export default function HeaderNav() {
         </div>
       </header>
 
-      {/* Mobile Bottom Navigation Bar (Mobile only) */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-150 shadow-[0_-4px_12px_rgba(0,0,0,0.03)] px-2 py-1.5 flex items-center justify-around">
+      {/* Mobile Bottom Navigation Bar (Mobile only) — styled to feel like a native app tab bar */}
+      <nav
+        className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-lg border-t border-slate-150 shadow-[0_-4px_16px_rgba(0,0,0,0.05)] px-1 flex items-stretch justify-around"
+        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+      >
         {navItems.map((item) => {
           const isActive = pathname === item.href;
           const Icon = item.icon;
-          
+
           // Split labels for mobile bottom bar
           let mobileLabel = item.label;
           if (item.label === "Send Email") mobileLabel = "Send";
           else if (item.label === "CRM Leads") mobileLabel = "CRM";
           else if (item.label === "Lead Finder") mobileLabel = "Finder";
-          
+
           return (
             <Link
               key={item.href}
               href={item.href}
-              className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl transition-all duration-200 select-none text-[9px] font-bold ${
-                isActive
-                  ? "text-sky-600 bg-sky-50"
-                  : "text-slate-400 hover:text-slate-700"
-              }`}
+              className="flex-1 flex items-center justify-center py-1.5"
             >
-              <Icon className={`w-4 h-4 ${isActive ? "text-sky-500" : "text-slate-450"}`} />
-              <span>{mobileLabel}</span>
+              <motion.span
+                whileTap={{ scale: 0.88 }}
+                transition={{ type: "spring", stiffness: 500, damping: 25 }}
+                className={`flex flex-col items-center justify-center gap-0.5 w-full min-h-11 rounded-xl select-none text-[10px] font-bold transition-colors duration-200 ${
+                  isActive
+                    ? "text-sky-600 bg-sky-50"
+                    : "text-slate-400"
+                }`}
+              >
+                <Icon className={`w-5 h-5 ${isActive ? "text-sky-500" : "text-slate-400"}`} />
+                <span>{mobileLabel}</span>
+              </motion.span>
             </Link>
           );
         })}

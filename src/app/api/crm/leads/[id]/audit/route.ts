@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseServerClient, isSupabaseConfigured } from "@/lib/supabase";
+import { getScreenshotUrl } from "@/lib/screenshot";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -71,18 +72,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ success: false, error: "Website URL is required to run a health audit" }, { status: 400 });
     }
 
-    const cleanUrl = lead.website.trim();
-    const thumIoKey = process.env.THUM_IO_KEY;
-    const microlinkKey = process.env.MICROLINK_API_KEY;
-    
-    let screenshot_url = "";
-    if (thumIoKey) {
-      screenshot_url = `https://image.thum.io/get/auth/${thumIoKey}/width/1280/crop/800/${cleanUrl.startsWith("http") ? cleanUrl : "https://" + cleanUrl}`;
-    } else if (microlinkKey) {
-      screenshot_url = `https://api.microlink.io/?url=${encodeURIComponent(cleanUrl.startsWith("http") ? cleanUrl : "https://" + cleanUrl)}&screenshot=true&embed=screenshot.url&apiKey=${microlinkKey}`;
-    } else {
-      screenshot_url = `https://v1.screenshot.11ty.dev/${encodeURIComponent(cleanUrl.startsWith("http") ? cleanUrl : "https://" + cleanUrl)}/large/`;
-    }
+    const screenshot_url = getScreenshotUrl(lead.website);
     const apiKey = process.env.GEMINI_API_KEY;
 
     let auditData: {

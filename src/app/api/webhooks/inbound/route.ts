@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { addEmailToInbox } from "@/lib/inboxStore";
+import { getSupabaseServerClient, isSupabaseConfigured } from "@/lib/supabase";
 
 export async function POST(req: NextRequest) {
   try {
@@ -46,6 +47,22 @@ export async function POST(req: NextRequest) {
       html: htmlBody,
       replyTo: emailData.reply_to || fromEmail
     });
+
+    // Mark the matching CRM lead as replied so the follow-up cron stops nudging them
+    if (isSupabaseConfigured()) {
+      try {
+        const supabase = getSupabaseServerClient();
+        if (supabase) {
+          await supabase
+            .from("leads")
+            .update({ replied_at: new Date().toISOString() })
+            .eq("email", fromEmail)
+            .is("replied_at", null);
+        }
+      } catch (matchErr) {
+        console.error("Failed to mark lead as replied:", matchErr);
+      }
+    }
 
     // Forward WhatsApp alerts if WHATSAPP_WEBHOOK_URL is configured
     const whatsappUrl = process.env.WHATSAPP_WEBHOOK_URL;

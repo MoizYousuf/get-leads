@@ -25,7 +25,7 @@ export default function BulkModeComposer({
           <label htmlFor="bulkText" className="block text-xs font-semibold text-slate-500 uppercase tracking-wider">
             Recipients (One per line: email, company_name)
           </label>
-          <span className="text-[10px] text-sky-400 bg-sky-500/10 border border-sky-500/15 px-2.5 py-0.5 rounded font-bold">
+          <span className="text-[10px] text-sky-500 bg-sky-500/10 border border-sky-500/15 px-2.5 py-0.5 rounded font-bold">
             {parsedBulkRecipientsCount} parsed leads
           </span>
         </div>
@@ -40,17 +40,17 @@ export default function BulkModeComposer({
           className="w-full bg-slate-50 border border-slate-200 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/10 rounded-xl px-4 py-3 text-xs font-mono text-slate-800 outline-none transition resize-y leading-relaxed hover:border-slate-300"
         />
         <p className="text-[10px] text-slate-500 mt-1.5 flex items-center gap-1.5 leading-normal">
-          <Terminal className="w-3.5 h-3.5 text-sky-400 shrink-0" />
+          <Terminal className="w-3.5 h-3.5 text-sky-500 shrink-0" />
           <span>Format: <code>email, company_name, contact_person, city, industry, website, phone</code> (Comma-separated)</span>
         </p>
       </div>
 
       <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
         <div className="flex justify-between items-center text-xs">
-          <label htmlFor="sendDelay" className="font-semibold text-slate-400">
+          <label htmlFor="sendDelay" className="font-semibold text-slate-500">
             Throttle Delay Between Sends:
           </label>
-          <span className="font-mono text-indigo-400 bg-indigo-500/10 border border-indigo-500/15 px-2.5 py-0.5 rounded font-bold">
+          <span className="font-mono text-indigo-600 bg-indigo-500/10 border border-indigo-500/15 px-2.5 py-0.5 rounded font-bold">
             {sendDelay} seconds
           </span>
         </div>

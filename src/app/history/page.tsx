@@ -257,8 +257,8 @@ function HistoryDashboard() {
       {/* Header section */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-100 tracking-tight">Sent Leads History</h1>
-          <p className="text-slate-400 text-sm mt-1">
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Sent Leads History</h1>
+          <p className="text-slate-500 text-sm mt-1">
             Browse and filter emails sent to your clients via Resend.
           </p>
         </div>
@@ -266,9 +266,9 @@ function HistoryDashboard() {
         <button
           onClick={fetchHistory}
           disabled={loading}
-          className="cursor-pointer self-start sm:self-auto flex items-center gap-2 px-4 py-2 bg-slate-900 border border-slate-800 hover:bg-slate-800 rounded-lg text-sm text-slate-200 transition-colors"
+          className="cursor-pointer self-start sm:self-auto flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 hover:bg-slate-100 rounded-lg text-sm text-slate-800 transition-colors"
         >
-          <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin text-sky-400" : ""}`} />
+          <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin text-sky-500" : ""}`} />
           Refresh Log
         </button>
       </div>
@@ -276,7 +276,7 @@ function HistoryDashboard() {
       {/* Restricted Key Warning Banner */}
       {isRestrictedKey && (
         <div className="bg-sky-500/10 border border-sky-500/20 text-sky-200 rounded-xl p-4 text-xs flex gap-2.5 items-center">
-          <Info className="w-4 h-4 text-sky-400 shrink-0" />
+          <Info className="w-4 h-4 text-sky-500 shrink-0" />
           <p>
             <strong>Note:</strong> Showing local browser history. Your Resend API key is restricted to <em>Sending Only</em>, which is highly secure and fully supported.
           </p>
@@ -291,7 +291,7 @@ function HistoryDashboard() {
           placeholder="Filter logs by client email address..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full bg-slate-900/40 border border-slate-800 focus:border-sky-500/80 focus:ring-1 focus:ring-sky-500/30 rounded-xl pl-10 pr-4 py-3.5 text-sm text-slate-100 outline-none transition-all"
+          className="w-full bg-white border border-slate-200 focus:border-sky-500/80 focus:ring-1 focus:ring-sky-500/30 rounded-xl pl-10 pr-4 py-3.5 text-sm text-slate-900 outline-none transition-all"
         />
       </div>
 
@@ -301,23 +301,23 @@ function HistoryDashboard() {
           <AlertCircle className="w-6 h-6 text-red-400 shrink-0" />
           <div className="space-y-2">
             <span className="font-semibold block">Error Fetching Logs</span>
-            <p className="text-slate-400 text-sm leading-relaxed">{errorMsg}</p>
+            <p className="text-slate-500 text-sm leading-relaxed">{errorMsg}</p>
             {errorMsg.includes("API key") && (
-              <p className="text-xs text-sky-400">
+              <p className="text-xs text-sky-500">
                 Please make sure to set <code>RESEND_API_KEY</code> in your environment or <code>.env.local</code> file and restart the application.
               </p>
             )}
           </div>
         </div>
       ) : loading ? (
-        <div className="flex flex-col items-center justify-center py-20 gap-4 bg-slate-900/10 border border-slate-900/40 rounded-xl">
+        <div className="flex flex-col items-center justify-center py-20 gap-4 bg-white border border-slate-200 rounded-xl">
           <div className="w-10 h-10 border-4 border-sky-500/20 border-t-sky-500 rounded-full animate-spin"></div>
-          <p className="text-slate-400 text-sm">Retrieving transaction history from Resend...</p>
+          <p className="text-slate-500 text-sm">Retrieving transaction history from Resend...</p>
         </div>
       ) : filteredEmails.length === 0 ? (
-        <div className="text-center py-16 bg-slate-900/20 border border-slate-800/60 rounded-xl space-y-3">
+        <div className="text-center py-16 bg-white border border-slate-200 rounded-xl space-y-3">
           <Mail className="w-12 h-12 text-slate-600 mx-auto" />
-          <h3 className="text-slate-300 font-semibold text-base">No sent emails found</h3>
+          <h3 className="text-slate-600 font-semibold text-base">No sent emails found</h3>
           <p className="text-slate-500 text-sm max-w-sm mx-auto">
             {searchQuery 
               ? `No emails match the recipient "${searchQuery}"`
@@ -326,7 +326,7 @@ function HistoryDashboard() {
           {!searchQuery && (
             <Link
               href="/"
-              className="inline-block mt-2 px-4 py-2 bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 border border-sky-500/25 rounded-lg text-sm font-medium transition-colors"
+              className="inline-block mt-2 px-4 py-2 bg-sky-500/10 hover:bg-sky-500/20 text-sky-500 border border-sky-500/25 rounded-lg text-sm font-medium transition-colors"
             >
               Compose New Email
             </Link>
@@ -341,7 +341,7 @@ function HistoryDashboard() {
             return (
               <div 
                 key={email.id} 
-                className="bg-slate-900/40 border border-slate-800 hover:border-slate-700/80 rounded-xl p-5 backdrop-blur-sm transition-all"
+                className="bg-white border border-slate-200 hover:border-slate-300 rounded-xl p-5 backdrop-blur-sm transition-all"
               >
                 <div 
                   onClick={() => toggleExpand(email.id)}
@@ -350,7 +350,7 @@ function HistoryDashboard() {
                   <div className="space-y-2 min-w-0 flex-1">
                     {/* Recipient and Date */}
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs">
-                      <span className="flex items-center gap-1.5 text-sky-400 bg-sky-500/10 px-2.5 py-0.5 rounded-full font-medium">
+                      <span className="flex items-center gap-1.5 text-sky-500 bg-sky-500/10 px-2.5 py-0.5 rounded-full font-medium">
                         <User className="w-3.5 h-3.5" />
                         {recipient}
                       </span>
@@ -362,7 +362,7 @@ function HistoryDashboard() {
 
                     {/* Subject and ID */}
                     <div className="flex items-center gap-2 pr-4">
-                      <h3 className="text-sm font-semibold text-slate-100 truncate">
+                      <h3 className="text-sm font-semibold text-slate-900 truncate">
                         {email.subject}
                       </h3>
                       <span className="text-slate-600 shrink-0">
@@ -375,30 +375,30 @@ function HistoryDashboard() {
                   </div>
 
                   {/* Actions */}
-                  <div className="flex items-center gap-3 shrink-0 pt-2 md:pt-0 border-t border-slate-800/60 md:border-0" onClick={(e) => e.stopPropagation()}>
+                  <div className="flex items-center gap-3 shrink-0 pt-2 md:pt-0 border-t border-slate-200 md:border-0" onClick={(e) => e.stopPropagation()}>
                     <Link
                       href={`/?to=${encodeURIComponent(recipient)}&subject=${encodeURIComponent(email.subject)}&body=${encodeURIComponent(email.body || "")}&template=${encodeURIComponent(email.templateId || "")}`}
-                      className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-800 hover:bg-slate-750 text-slate-200 rounded-lg text-xs font-semibold transition-colors w-full md:w-auto justify-center"
+                      className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg text-xs font-semibold transition-colors w-full md:w-auto justify-center"
                     >
                       Send Another
-                      <ArrowUpRight className="w-3.5 h-3.5 text-slate-400" />
+                      <ArrowUpRight className="w-3.5 h-3.5 text-slate-500" />
                     </Link>
                   </div>
                 </div>
 
                 {/* Expanded Full Body Preview */}
                 {isExpanded && (
-                  <div className="mt-4 pt-4 border-t border-slate-800/80 text-xs text-slate-300 space-y-2.5 animate-fadeIn">
-                    <div className="font-semibold text-[10px] text-slate-400 uppercase tracking-wider">
+                  <div className="mt-4 pt-4 border-t border-slate-200 text-xs text-slate-600 space-y-2.5 animate-fadeIn">
+                    <div className="font-semibold text-[10px] text-slate-500 uppercase tracking-wider">
                       Full Message Content:
                     </div>
                     {emailDetailsLoading[email.id] ? (
                       <div className="flex items-center gap-2 text-slate-500 py-2">
-                        <RefreshCw className="w-3.5 h-3.5 animate-spin text-sky-400" />
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin text-sky-500" />
                         <span>Loading full message text from Resend...</span>
                       </div>
                     ) : (
-                      <div className="bg-slate-950 p-4 rounded-lg font-mono whitespace-pre-wrap break-words leading-relaxed text-slate-300 border border-slate-900/60">
+                      <div className="bg-slate-50 p-4 rounded-lg font-mono whitespace-pre-wrap break-words leading-relaxed text-slate-600 border border-slate-200">
                         {email.body || (
                           <span className="text-slate-500 italic">
                             Full message body details are not cached in local browser (only Resend API transaction receipt metadata is available).
@@ -416,33 +416,33 @@ function HistoryDashboard() {
 
       {/* Pagination Controls */}
       {!loading && !errorMsg && totalPages > 1 && (
-        <div className="flex items-center justify-between border-t border-slate-900 pt-6 mt-6">
-          <div className="text-xs text-slate-400">
-            Showing <span className="font-semibold text-slate-300">{startIndex + 1}</span> to{" "}
-            <span className="font-semibold text-slate-300">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-slate-200 pt-6 mt-6 w-full text-center sm:text-left">
+          <div className="text-xs text-slate-500 whitespace-nowrap">
+            Showing <span className="font-semibold text-slate-600">{startIndex + 1}</span> to{" "}
+            <span className="font-semibold text-slate-600">
               {Math.min(startIndex + itemsPerPage, filteredEmails.length)}
             </span>{" "}
-            of <span className="font-semibold text-slate-300">{filteredEmails.length}</span> sent emails
+            of <span className="font-semibold text-slate-600">{filteredEmails.length}</span> sent emails
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex gap-2 w-full sm:w-auto justify-between sm:justify-start">
             <button
               type="button"
               onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
               disabled={currentPage === 1}
-              className="cursor-pointer flex items-center gap-1 px-3 py-2 bg-slate-900 border border-slate-800 hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-slate-900 rounded-lg text-xs font-semibold text-slate-200 transition-colors"
+              className="cursor-pointer flex-1 sm:flex-initial flex items-center justify-center gap-1 px-3.5 py-2 bg-white border border-slate-200 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white rounded-lg text-xs font-semibold text-slate-800 transition-colors whitespace-nowrap"
             >
               <ChevronLeft className="w-3.5 h-3.5" />
               Prev
             </button>
-            <div className="flex items-center justify-center px-3 text-xs font-semibold text-slate-300 bg-slate-950 border border-slate-850 rounded-lg">
+            <div className="flex-1 sm:flex-initial flex items-center justify-center px-4 text-xs font-semibold text-slate-600 bg-slate-50 border border-slate-200 rounded-lg whitespace-nowrap">
               Page {currentPage} of {totalPages}
             </div>
             <button
               type="button"
               onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
               disabled={currentPage === totalPages}
-              className="cursor-pointer flex items-center gap-1 px-3 py-2 bg-slate-900 border border-slate-800 hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-slate-900 rounded-lg text-xs font-semibold text-slate-200 transition-colors"
+              className="cursor-pointer flex-1 sm:flex-initial flex items-center justify-center gap-1 px-3.5 py-2 bg-white border border-slate-200 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white rounded-lg text-xs font-semibold text-slate-800 transition-colors whitespace-nowrap"
             >
               Next
               <ChevronRight className="w-3.5 h-3.5" />
@@ -460,7 +460,7 @@ export default function HistoryPage() {
     <Suspense fallback={
       <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4">
         <div className="w-12 h-12 border-4 border-sky-500/20 border-t-sky-500 rounded-full animate-spin"></div>
-        <p className="text-slate-400 text-sm animate-pulse">Loading sent history...</p>
+        <p className="text-slate-500 text-sm animate-pulse">Loading sent history...</p>
       </div>
     }>
       <HistoryDashboard />

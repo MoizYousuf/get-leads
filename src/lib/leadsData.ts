@@ -11,6 +11,7 @@ export interface Lead {
   address?: string | null;
   enrichAttempted?: boolean;
   enrichFailed?: boolean;
+  emailSource?: "crawl" | "enrich" | "guess" | null;
 }
 
 // Pre-defined values to generate realistic data

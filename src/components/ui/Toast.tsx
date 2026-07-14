@@ -43,17 +43,22 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     <ToastContext.Provider value={{ toast }}>
       {children}
       
-      {/* Toast Portal Container */}
-      <div className="fixed bottom-6 right-6 z-55 flex flex-col gap-3 max-w-sm w-full pointer-events-none">
+      {/* Toast Portal Container — sits above the mobile bottom tab bar and clears the safe area */}
+      <div
+        className="fixed z-55 flex flex-col gap-3 max-w-sm w-[calc(100%-2rem)] sm:w-full pointer-events-none left-4 right-4 sm:left-auto sm:right-6 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] md:bottom-6"
+        aria-live="polite"
+        aria-atomic="true"
+      >
         <AnimatePresence>
           {toasts.map((t) => {
             const isSuccess = t.type === "success";
             const isError = t.type === "error";
-            
+
             return (
               <motion.div
                 key={t.id}
                 layout
+                role={isError ? "alert" : "status"}
                 initial={{ opacity: 0, y: 35, scale: 0.92, filter: "blur(4px)" }}
                 animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
                 exit={{ opacity: 0, scale: 0.85, filter: "blur(4px)", transition: { duration: 0.2 } }}
@@ -74,22 +79,22 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                 {/* Icon */}
                 <div className="shrink-0 mt-0.5">
                   {isSuccess ? (
-                    <CheckCircle2 className="w-5 h-5 text-emerald-450" />
+                    <CheckCircle2 className="w-5 h-5 text-emerald-500" />
                   ) : isError ? (
-                    <AlertCircle className="w-5 h-5 text-rose-450" />
+                    <AlertCircle className="w-5 h-5 text-rose-500" />
                   ) : (
-                    <Info className="w-5 h-5 text-sky-450" />
+                    <Info className="w-5 h-5 text-sky-500" />
                   )}
                 </div>
 
                 {/* Content */}
                 <div className="flex-1 space-y-1 pr-4">
                   {t.title && (
-                    <h4 className="font-bold text-xs uppercase tracking-wider text-slate-100">
+                    <h4 className="font-bold text-xs uppercase tracking-wider text-slate-900">
                       {t.title}
                     </h4>
                   )}
-                  <p className="text-xs text-slate-350 leading-relaxed font-semibold">
+                  <p className="text-xs text-slate-600 leading-relaxed font-semibold">
                     {t.message}
                   </p>
                 </div>
@@ -97,7 +102,8 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                 {/* Close Button */}
                 <button
                   onClick={() => removeToast(t.id)}
-                  className="shrink-0 p-1 hover:bg-slate-950/30 rounded-lg text-slate-500 hover:text-slate-200 transition cursor-pointer"
+                  aria-label="Dismiss notification"
+                  className="shrink-0 p-1.5 min-w-7 min-h-7 flex items-center justify-center hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-700 transition cursor-pointer"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>

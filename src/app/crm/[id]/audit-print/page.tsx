@@ -52,7 +52,7 @@ export default function AuditPrintPage({ params }: PageProps) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center space-y-3 text-slate-200">
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center space-y-3 text-slate-800">
         <div className="w-8 h-8 border-3 border-indigo-500 border-t-white rounded-full animate-spin" />
         <span className="text-xs font-semibold tracking-wide">Compiling proposal document...</span>
       </div>
@@ -61,7 +61,7 @@ export default function AuditPrintPage({ params }: PageProps) {
 
   if (!lead || !audit) {
     return (
-      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center space-y-2 text-rose-450 p-6 text-center">
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center space-y-2 text-rose-450 p-6 text-center">
         <AlertCircle className="w-10 h-10" />
         <h3 className="font-bold text-sm">Audit Data Missing</h3>
         <p className="text-xs text-slate-500 max-w-xs">Please run the AI Website Audit from the CRM profile page before printing.</p>
@@ -80,16 +80,16 @@ export default function AuditPrintPage({ params }: PageProps) {
   };
 
   return (
-    <div className="bg-slate-900 min-h-screen py-8 px-4 print:py-0 print:px-0 print:bg-white print:text-black">
+    <div className="bg-white min-h-screen py-8 px-4 print:py-0 print:px-0 print:bg-white print:text-black">
       {/* Print Controls Header (Hidden during Print) */}
-      <div className="max-w-4xl mx-auto mb-6 bg-slate-950/80 border border-slate-850 p-4 rounded-3xl flex flex-col sm:flex-row gap-4 items-center justify-between shadow-2xl print:hidden">
+      <div className="max-w-4xl mx-auto mb-6 bg-white border border-slate-200 p-4 rounded-3xl flex flex-col sm:flex-row gap-4 items-center justify-between shadow-2xl print:hidden">
         <div className="space-y-0.5 text-center sm:text-left">
-          <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest block">Client Proposal Ready</span>
-          <h2 className="text-slate-100 font-black text-sm">PDF Slide Exporter Console</h2>
+          <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest block">Client Proposal Ready</span>
+          <h2 className="text-slate-900 font-black text-sm">PDF Slide Exporter Console</h2>
         </div>
         <button
           onClick={() => window.print()}
-          className="w-full sm:w-auto px-5 py-2.5 bg-indigo-600 hover:bg-indigo-550 text-slate-100 font-bold rounded-xl text-xs transition cursor-pointer shadow-lg shadow-indigo-500/10 flex items-center justify-center gap-1.5"
+          className="w-full sm:w-auto px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl text-xs transition cursor-pointer shadow-lg shadow-indigo-500/10 flex items-center justify-center gap-1.5"
         >
           <Sparkles className="w-4 h-4 shrink-0" />
           Print / Save Proposal PDF
@@ -106,12 +106,12 @@ export default function AuditPrintPage({ params }: PageProps) {
           {/* Logo & Agency Brand Header */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-slate-900 flex items-center justify-center text-slate-100 text-sm font-black">
+              <div className="w-7 h-7 rounded-lg bg-white flex items-center justify-center text-slate-900 text-sm font-black">
                 K
               </div>
               <span className="font-black text-sm tracking-wider text-slate-900">KHANANI INNOVATIONS</span>
             </div>
-            <span className="text-[10px] font-mono text-slate-400">digital product studio</span>
+            <span className="text-[10px] font-mono text-slate-500">digital product studio</span>
           </div>
 
           {/* Proposal Cover Title */}
@@ -124,12 +124,12 @@ export default function AuditPrintPage({ params }: PageProps) {
             
             <div className="grid grid-cols-2 gap-8 pt-8 max-w-md">
               <div className="space-y-1">
-                <span className="text-[10px] text-slate-400 uppercase tracking-wider block font-bold">PREPARED FOR</span>
+                <span className="text-[10px] text-slate-500 uppercase tracking-wider block font-bold">PREPARED FOR</span>
                 <span className="text-xs font-bold text-slate-900 block">{lead.name}</span>
                 <span className="text-[10px] text-slate-500 block truncate">{lead.website}</span>
               </div>
               <div className="space-y-1">
-                <span className="text-[10px] text-slate-400 uppercase tracking-wider block font-bold">DATE GENERATED</span>
+                <span className="text-[10px] text-slate-500 uppercase tracking-wider block font-bold">DATE GENERATED</span>
                 <span className="text-xs font-bold text-slate-900 block">
                   {new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
                 </span>
@@ -140,9 +140,9 @@ export default function AuditPrintPage({ params }: PageProps) {
 
           {/* Screenshot Showcase Frame */}
           <div className="space-y-4">
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+            <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-xl">
               {/* Browser chrome */}
-              <div className="bg-slate-850 px-4 py-1.5 flex items-center gap-1.5 border-b border-slate-800">
+              <div className="bg-slate-50 px-4 py-1.5 flex items-center gap-1.5 border-b border-slate-200">
                 <div className="w-2 h-2 rounded-full bg-rose-500/80" />
                 <div className="w-2 h-2 rounded-full bg-amber-500/80" />
                 <div className="w-2 h-2 rounded-full bg-emerald-500/80" />
@@ -150,7 +150,7 @@ export default function AuditPrintPage({ params }: PageProps) {
                   {lead.website}
                 </div>
               </div>
-              <div className="aspect-[21/9] bg-slate-950 overflow-hidden">
+              <div className="aspect-[21/9] bg-slate-50 overflow-hidden">
                 <img
                   src={audit.screenshot_url}
                   alt="Lead Homepage Screenshot"
@@ -158,7 +158,7 @@ export default function AuditPrintPage({ params }: PageProps) {
                 />
               </div>
             </div>
-            <p className="text-[10px] text-slate-450 italic text-center leading-relaxed">
+            <p className="text-[10px] text-slate-500 italic text-center leading-relaxed">
               Screenshot of client homepage homepage crawled on {new Date(audit.created_at).toLocaleDateString()}.
             </p>
           </div>
@@ -171,7 +171,7 @@ export default function AuditPrintPage({ params }: PageProps) {
           <div className="space-y-8">
             {/* Page Header */}
             <div className="flex justify-between items-center pb-4 border-b border-slate-150">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Section 01 / Diagnostics</span>
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Section 01 / Diagnostics</span>
               <span className="text-[10px] text-slate-500">Khanani Innovations</span>
             </div>
 
@@ -184,21 +184,21 @@ export default function AuditPrintPage({ params }: PageProps) {
 
               <div className="grid grid-cols-4 gap-4 pt-4">
                 <div className="bg-slate-50 border border-slate-150 p-4 rounded-2xl text-center space-y-1">
-                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Performance</span>
+                  <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest block">Performance</span>
                   <span className={`text-2xl font-black block ${
                     audit.scores.performance >= 90 ? "text-emerald-600" :
                     audit.scores.performance >= 70 ? "text-amber-600" : "text-rose-600"
                   }`}>{audit.scores.performance}%</span>
                 </div>
                 <div className="bg-slate-50 border border-slate-150 p-4 rounded-2xl text-center space-y-1">
-                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">SEO Health</span>
+                  <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest block">SEO Health</span>
                   <span className={`text-2xl font-black block ${
                     audit.scores.seo >= 90 ? "text-emerald-600" :
                     audit.scores.seo >= 70 ? "text-amber-600" : "text-rose-600"
                   }`}>{audit.scores.seo}%</span>
                 </div>
                 <div className="bg-slate-50 border border-slate-150 p-4 rounded-2xl text-center space-y-1">
-                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Mobile Ready</span>
+                  <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest block">Mobile Ready</span>
                   <span className={`text-2xl font-black block ${
                     audit.scores.mobile >= 90 ? "text-emerald-600" :
                     audit.scores.mobile >= 70 ? "text-amber-600" : "text-rose-600"
@@ -223,7 +223,7 @@ export default function AuditPrintPage({ params }: PageProps) {
                 </h3>
                 <ul className="space-y-3.5">
                   {audit.findings.bugs.map((bug: string, idx: number) => (
-                    <li key={idx} className="flex gap-2 text-xs text-slate-650 leading-relaxed items-start">
+                    <li key={idx} className="flex gap-2 text-xs text-slate-600 leading-relaxed items-start">
                       <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0 mt-2" />
                       <span>{bug}</span>
                     </li>
@@ -238,7 +238,7 @@ export default function AuditPrintPage({ params }: PageProps) {
                 </h3>
                 <ul className="space-y-3.5">
                   {audit.findings.recommendations.map((rec: string, idx: number) => (
-                    <li key={idx} className="flex gap-2 text-xs text-slate-650 leading-relaxed items-start">
+                    <li key={idx} className="flex gap-2 text-xs text-slate-600 leading-relaxed items-start">
                       <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0 mt-2" />
                       <span>{rec}</span>
                     </li>
@@ -249,7 +249,7 @@ export default function AuditPrintPage({ params }: PageProps) {
           </div>
 
           {/* Footer Notice */}
-          <div className="flex justify-between items-center text-[9px] text-slate-400">
+          <div className="flex justify-between items-center text-[9px] text-slate-500">
             <span>Prepared by Khanani Innovations</span>
             <span>Page 2</span>
           </div>
@@ -262,7 +262,7 @@ export default function AuditPrintPage({ params }: PageProps) {
           <div className="space-y-8">
             {/* Page Header */}
             <div className="flex justify-between items-center pb-4 border-b border-slate-150">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Section 02 / Services & Estimates</span>
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Section 02 / Services & Estimates</span>
               <span className="text-[10px] text-slate-500">Khanani Innovations</span>
             </div>
 
@@ -285,7 +285,7 @@ export default function AuditPrintPage({ params }: PageProps) {
                     {Array.isArray(primaryProposal.services) && primaryProposal.services.length > 0 ? (
                       primaryProposal.services.map((item: any, idx: number) => (
                         <tr key={idx} className="border-b border-slate-150 hover:bg-slate-50/40 transition">
-                          <td className="p-4 text-slate-650 leading-relaxed font-medium">{item.description}</td>
+                          <td className="p-4 text-slate-600 leading-relaxed font-medium">{item.description}</td>
                           <td className="p-4 text-right font-bold text-slate-800">${(Number(item.price) || 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}</td>
                         </tr>
                       ))
@@ -315,14 +315,14 @@ export default function AuditPrintPage({ params }: PageProps) {
                 <div className="space-y-4">
                   <div className="h-10 border-b border-slate-300" />
                   <div>
-                    <span className="text-[10px] text-slate-400 uppercase tracking-wider block font-bold">CLIENT SIGNATURE / REPRESENTATIVE</span>
+                    <span className="text-[10px] text-slate-500 uppercase tracking-wider block font-bold">CLIENT SIGNATURE / REPRESENTATIVE</span>
                     <span className="text-xs font-bold text-slate-700 block mt-1">{lead.name} representative</span>
                   </div>
                 </div>
                 <div className="space-y-4">
                   <div className="h-10 border-b border-slate-300" />
                   <div>
-                    <span className="text-[10px] text-slate-400 uppercase tracking-wider block font-bold">AGENCY AUTHORIZATION</span>
+                    <span className="text-[10px] text-slate-500 uppercase tracking-wider block font-bold">AGENCY AUTHORIZATION</span>
                     <span className="text-xs font-bold text-slate-700 block mt-1">Khanani Innovations Team</span>
                   </div>
                 </div>
@@ -331,7 +331,7 @@ export default function AuditPrintPage({ params }: PageProps) {
           </div>
 
           {/* Footer Notice */}
-          <div className="flex justify-between items-center text-[9px] text-slate-400 pt-8">
+          <div className="flex justify-between items-center text-[9px] text-slate-500 pt-8">
             <span>Prepared by Khanani Innovations</span>
             <span>Page 3</span>
           </div>

@@ -16,9 +16,17 @@ CREATE TABLE IF NOT EXISTS leads (
     status TEXT DEFAULT 'New',
     tags TEXT[] DEFAULT '{}',
     sort_order INT DEFAULT 0,
+    last_contacted_at TIMESTAMPTZ,
+    follow_up_count INT DEFAULT 0,
+    replied_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now()
 );
+
+-- Safe to re-run against an existing table created before these columns existed
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS last_contacted_at TIMESTAMPTZ;
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS follow_up_count INT DEFAULT 0;
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS replied_at TIMESTAMPTZ;
 
 -- Create index on search and filter columns for performance
 CREATE INDEX IF NOT EXISTS idx_leads_status ON leads(status);

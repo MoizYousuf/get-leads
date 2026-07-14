@@ -242,7 +242,7 @@ export default function InboxDashboard() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 15, scale: 0.95 }}
             transition={{ type: "spring", stiffness: 350, damping: 28 }}
-            className="fixed bottom-6 right-6 bg-slate-900 border border-sky-500/30 text-sky-200 px-5 py-3 rounded-xl shadow-2xl z-50 flex items-center gap-2"
+            className="fixed bottom-6 right-6 bg-white border border-sky-500/30 text-sky-200 px-5 py-3 rounded-xl shadow-2xl z-50 flex items-center gap-2"
           >
             <span className="w-2 h-2 rounded-full bg-sky-400 animate-ping" />
             <span className="text-sm font-bold">{toastMessage}</span>
@@ -251,15 +251,15 @@ export default function InboxDashboard() {
       </AnimatePresence>
 
       {/* Header Dashboard Controls */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900/40 border border-slate-800 rounded-xl p-6 backdrop-blur-sm">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white border border-slate-200 rounded-xl p-6 backdrop-blur-sm">
         <div>
-          <h1 className="text-2xl font-bold text-slate-100 flex items-center gap-2">
-            <Inbox className="w-6 h-6 text-sky-400" />
+          <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+            <Inbox className="w-6 h-6 text-sky-500" />
             Webhook Inbound Inbox
           </h1>
-          <p className="text-slate-400 text-xs mt-1">
+          <p className="text-slate-500 text-xs mt-1">
             Receiving replies from client outreach via Resend webhook. Configure webhook endpoint to:{" "}
-            <code className="text-sky-300 bg-slate-950 px-2 py-0.5 rounded font-mono text-[10px] border border-slate-850">/api/webhooks/inbound</code>
+            <code className="text-sky-600 bg-slate-50 px-2 py-0.5 rounded font-mono text-[10px] border border-slate-200">/api/webhooks/inbound</code>
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -299,7 +299,7 @@ export default function InboxDashboard() {
       </div>
 
       {/* Main Container for Inbox Grid with Scanning Loader */}
-      <div className="relative bg-slate-900/40 border border-slate-800 rounded-xl overflow-hidden backdrop-blur-sm min-h-[350px]">
+      <div className="relative bg-white border border-slate-200 rounded-xl overflow-hidden backdrop-blur-sm min-h-[350px]">
         {/* Glowing Scanner Line Loader (Premium Reload effect) */}
         {loading && (
           <div className="absolute top-0 left-0 right-0 h-[3px] bg-sky-500/10 overflow-hidden z-30">
@@ -314,18 +314,18 @@ export default function InboxDashboard() {
         {loading && emails.length === 0 ? (
           /* Loading Placeholder Skeletons */
           <div className="p-8 space-y-6">
-            <div className="h-6 w-1/4 bg-slate-850 rounded animate-pulse" />
+            <div className="h-6 w-1/4 bg-slate-50 rounded animate-pulse" />
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
               <div className="lg:col-span-5 space-y-4">
                 {Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} className="p-4 bg-slate-900/60 border border-slate-800/80 rounded-xl animate-pulse space-y-3">
-                    <div className="h-3.5 w-1/3 bg-slate-850 rounded" />
-                    <div className="h-3 w-3/4 bg-slate-850 rounded" />
-                    <div className="h-2 w-full bg-slate-900 rounded" />
+                  <div key={i} className="p-4 bg-white border border-slate-200 rounded-xl animate-pulse space-y-3">
+                    <div className="h-3.5 w-1/3 bg-slate-50 rounded" />
+                    <div className="h-3 w-3/4 bg-slate-50 rounded" />
+                    <div className="h-2 w-full bg-white rounded" />
                   </div>
                 ))}
               </div>
-              <div className="lg:col-span-7 bg-slate-950/20 border border-slate-850/60 rounded-xl p-8 flex flex-col items-center justify-center min-h-[300px]">
+              <div className="lg:col-span-7 bg-white border border-slate-200 rounded-xl p-8 flex flex-col items-center justify-center min-h-[300px]">
                 <div className="w-10 h-10 border-4 border-sky-500/15 border-t-sky-500 rounded-full animate-spin mb-4" />
                 <span className="text-xs text-slate-500 animate-pulse">Initializing inbox...</span>
               </div>
@@ -337,14 +337,14 @@ export default function InboxDashboard() {
             initial={{ opacity: 0, scale: 0.97 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.3 }}
-            className="flex flex-col items-center justify-center min-h-[350px] text-center p-8 bg-slate-900/20"
+            className="flex flex-col items-center justify-center min-h-[350px] text-center p-8 bg-white"
           >
-            <div className="w-14 h-14 bg-slate-900 border border-slate-800 rounded-full flex items-center justify-center text-slate-500 mb-4 relative">
+            <div className="w-14 h-14 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-500 mb-4 relative">
               <span className="absolute inset-0 rounded-full border border-sky-500/25 animate-ping opacity-60" />
-              <Inbox className="w-6 h-6 text-sky-400/80" />
+              <Inbox className="w-6 h-6 text-sky-500/80" />
             </div>
-            <h3 className="font-bold text-slate-200">Your Inbox is Empty</h3>
-            <p className="text-slate-400 text-xs max-w-sm mt-1 mb-5 leading-relaxed">
+            <h3 className="font-bold text-slate-800">Your Inbox is Empty</h3>
+            <p className="text-slate-500 text-xs max-w-sm mt-1 mb-5 leading-relaxed">
               You haven't received any email webhooks yet. Click "Simulate Reply" above to test how incoming leads emails are captured.
             </p>
             <motion.button
@@ -363,7 +363,7 @@ export default function InboxDashboard() {
             {/* Email List Left Panel */}
             <div className={`lg:col-span-5 bg-white border-r border-slate-200 flex flex-col h-[580px] ${selectedEmail ? "hidden lg:flex" : "flex"}`}>
               <div className="p-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
                   All Message Threads
                 </span>
                 <span className="text-[10px] bg-sky-50 border border-sky-100 text-sky-600 px-2 py-0.5 rounded font-mono font-bold">
@@ -382,13 +382,13 @@ export default function InboxDashboard() {
                     onChange={(e) => setSearch(e.target.value)}
                     className="w-full bg-white border border-slate-200 focus:border-sky-500 rounded-lg py-1.5 pl-8 pr-7 text-xs text-slate-800 placeholder-slate-400 focus:outline-none transition-all"
                   />
-                  <span className="absolute left-2.5 top-2 text-slate-400">
+                  <span className="absolute left-2.5 top-2 text-slate-500">
                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                   </span>
                   {search && (
                     <button
                       onClick={() => setSearch("")}
-                      className="absolute right-2 top-2 text-slate-400 hover:text-slate-200 cursor-pointer"
+                      className="absolute right-2 top-2 text-slate-500 hover:text-slate-800 cursor-pointer"
                     >
                       <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                     </button>
@@ -409,7 +409,7 @@ export default function InboxDashboard() {
                     onFocus={() => setShowSenderDropdown(true)}
                     className="w-full bg-white border border-slate-200 focus:border-sky-500 rounded-lg py-1.5 pl-8 pr-7 text-xs text-slate-800 placeholder-slate-400 focus:outline-none transition-all"
                   />
-                  <span className="absolute left-2.5 top-2.5 text-slate-400">
+                  <span className="absolute left-2.5 top-2.5 text-slate-500">
                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
                   </span>
                   {(senderInput || selectedSender) && (
@@ -419,7 +419,7 @@ export default function InboxDashboard() {
                         setSelectedSender("");
                         setShowSenderDropdown(false);
                       }}
-                      className="absolute right-2 top-2 text-slate-400 hover:text-slate-200 cursor-pointer"
+                      className="absolute right-2 top-2 text-slate-500 hover:text-slate-800 cursor-pointer"
                     >
                       <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                     </button>
@@ -455,7 +455,7 @@ export default function InboxDashboard() {
                                   setSelectedSender(s.email);
                                   setShowSenderDropdown(false);
                                 }}
-                                className="w-full text-left p-2.5 text-[11px] hover:bg-slate-850 hover:text-sky-300 transition-colors block cursor-pointer"
+                                className="w-full text-left p-2.5 text-[11px] hover:bg-slate-50 hover:text-sky-600 transition-colors block cursor-pointer"
                               >
                                 <span className="font-bold text-slate-800 block">{s.name || "Unknown"}</span>
                                 <span className="text-slate-500 block text-[10px] font-mono mt-0.5">{s.email}</span>
@@ -516,7 +516,7 @@ export default function InboxDashboard() {
                             <div className="flex justify-between items-start w-full">
                               <div className="flex items-center gap-1.5 min-w-0">
                                 <User className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                                <span className="font-bold text-xs text-slate-200 truncate">
+                                <span className="font-bold text-xs text-slate-800 truncate">
                                   {email.fromName || email.from.split("@")[0]}
                                 </span>
                               </div>
@@ -534,7 +534,7 @@ export default function InboxDashboard() {
                               </p>
                             </div>
 
-                            <div className="flex justify-between items-center text-[9px] text-slate-450 border-t border-slate-100 pt-2 mt-1">
+                            <div className="flex justify-between items-center text-[9px] text-slate-500 border-t border-slate-100 pt-2 mt-1">
                               <span className="font-mono truncate max-w-[170px]">{email.from}</span>
                               <div className="flex items-center gap-0.5 text-sky-600 font-bold">
                                 View Thread <ChevronRight className="w-3 h-3" />
@@ -619,7 +619,7 @@ export default function InboxDashboard() {
                         </h2>
                         <div className="flex flex-wrap gap-x-4 gap-y-1.5 mt-2 text-xs text-slate-500 items-center">
                           <div className="flex items-center gap-1">
-                            <span className="font-medium text-slate-450">From:</span>
+                            <span className="font-medium text-slate-500">From:</span>
                             <span className="text-slate-800 font-bold">
                               {selectedEmail.fromName ? `${selectedEmail.fromName} <${selectedEmail.from}>` : selectedEmail.from}
                             </span>
@@ -654,7 +654,7 @@ export default function InboxDashboard() {
                     {/* Metadata Subheader bar */}
                     <div className="px-6 py-3 bg-slate-50 border-b border-slate-200 flex justify-between items-center text-[10px] text-slate-550 shrink-0">
                       <div className="flex items-center gap-1 font-mono">
-                        <Clock className="w-3 h-3 text-slate-400" />
+                        <Clock className="w-3 h-3 text-slate-500" />
                         <span>Received: {new Date(selectedEmail.date).toLocaleString()}</span>
                       </div>
                       <span className="bg-slate-100 border border-slate-200 px-2 py-0.5 rounded text-slate-500 font-bold">
@@ -680,8 +680,8 @@ export default function InboxDashboard() {
                   </motion.div>
                 ) : (
                   <div className="flex flex-col items-center justify-center h-full text-center p-8 bg-slate-50">
-                    <div className="w-14 h-14 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-400 mb-3 shadow-sm">
-                      <MailOpen className="w-6 h-6 text-slate-400" />
+                    <div className="w-14 h-14 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-500 mb-3 shadow-sm">
+                      <MailOpen className="w-6 h-6 text-slate-500" />
                     </div>
                     <h4 className="font-bold text-slate-800 text-sm">No Thread Selected</h4>
                     <p className="text-slate-500 text-xs mt-1 leading-relaxed">

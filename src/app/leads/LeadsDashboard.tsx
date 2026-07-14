@@ -797,6 +797,13 @@ export default function LeadsDashboard() {
   const handleImportToCRM = async () => {
     if (selectedLeadIds.size === 0) return;
 
+    if (isFallback) {
+      const proceed = window.confirm(
+        "These results are simulated demo data (SERPAPI_API_KEY isn't configured), not real businesses. Importing them will add fake leads to your CRM. Continue anyway?"
+      );
+      if (!proceed) return;
+    }
+
     setIsImporting(true);
     try {
       const selectedLeads = filteredTableLeads.filter(l => selectedLeadIds.has(l.id));
@@ -1014,6 +1021,11 @@ export default function LeadsDashboard() {
             handleEnrichLead={handleEnrichLead}
             enrichingIds={enrichingIds}
             onSaveToCrm={async (lead) => {
+              if (isFallback && !window.confirm(
+                "These results are simulated demo data (SERPAPI_API_KEY isn't configured), not a real business. Import this fake lead anyway?"
+              )) {
+                return;
+              }
               const res = await fetch("/api/crm/leads", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },

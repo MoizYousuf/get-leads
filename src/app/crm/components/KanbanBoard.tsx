@@ -134,7 +134,7 @@ export function KanbanBoard({
                 {columnLeads.length === 0 ? (
                   <div
                     onDragOver={(e) => e.preventDefault()}
-                    className="h-full min-h-[150px] border border-dashed border-slate-200 rounded-xl flex items-center justify-center text-[10px] text-slate-550 italic"
+                    className="h-full min-h-[150px] border border-dashed border-slate-200 rounded-xl flex items-center justify-center text-[10px] text-slate-400 italic"
                   >
                     Drag leads here
                   </div>

@@ -11,6 +11,8 @@ import { BulkActionsBar } from "./components/BulkActionsBar";
 import { OverdueAlertBanner } from "./components/OverdueAlertBanner";
 import { ProposalsSummary } from "./components/ProposalsSummary";
 import { TemplatePerformance } from "./components/TemplatePerformance";
+import { SubjectPerformance } from "./components/SubjectPerformance";
+import { FunnelOverview } from "./components/FunnelOverview";
 import { LeadsTable } from "./components/LeadsTable";
 import { KanbanBoard } from "./components/KanbanBoard";
 import { AddLeadModal, type NewLeadData } from "./components/AddLeadModal";
@@ -636,9 +638,13 @@ export default function CRMDashboard() {
         handleOverdueFollowUpEmail={handleOverdueFollowUpEmail}
       />
 
+      <FunnelOverview />
+
       <ProposalsSummary proposals={proposals} />
 
       <TemplatePerformance />
+
+      <SubjectPerformance />
 
       {/* CRM Leads Table Panel */}
       {viewMode === "list" ? (

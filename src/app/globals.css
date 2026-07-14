@@ -103,6 +103,18 @@ input:focus, select:focus, textarea:focus {
   opacity: 1; /* Firefox */
 }
 
+/* Global keyboard-focus visibility for buttons/links/custom controls — inputs already
+   get their own focus ring above. Without this, tabbing through buttons and custom
+   dropdown triggers falls back to the browser default, which is often invisible
+   against this app's white surfaces. */
+button:focus-visible,
+a:focus-visible,
+[role="button"]:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
 /* -----------------------------------------------------------
    Shared keyframes for small local flourishes (VIP badge shimmer,
    generated-content fade-in) referenced via arbitrary animate-[] /

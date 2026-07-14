@@ -1,3 +1,5 @@
+import { normalizeIndustry } from "./industryTaxonomy";
+
 export interface Lead {
   id: string;
   name: string;
@@ -113,7 +115,7 @@ export function findLeads(
       email,
       phone,
       website,
-      industry: industry.charAt(0).toUpperCase() + industry.slice(1),
+      industry: normalizeIndustry(industry),
       city: city.charAt(0).toUpperCase() + city.slice(1),
       placeId: `mock_place_${start}_${i}`,
       address: `${Math.floor(rnd() * 999) + 1} Main St, ${city.charAt(0).toUpperCase() + city.slice(1)}`

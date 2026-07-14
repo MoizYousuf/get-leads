@@ -167,7 +167,7 @@ export async function POST(req: NextRequest) {
             type: "email_sent",
             title: "Outreach email sent",
             description: subject,
-            metadata: { templateId: templateId || null },
+            metadata: { templateId: templateId || null, subject },
           });
         }
       } catch (trackErr) {

@@ -91,9 +91,9 @@ export async function GET(req: NextRequest) {
           html,
           text: body,
         });
-        return { leadId: lead.id, sent: !res.error };
+        return { leadId: lead.id, sent: !res.error, subject };
       } catch {
-        return { leadId: lead.id, sent: false };
+        return { leadId: lead.id, sent: false, subject };
       }
     })
   );
@@ -120,8 +120,8 @@ export async function GET(req: NextRequest) {
       lead_id: r.leadId,
       type: "email_sent",
       title: "Automated follow-up sent",
-      description: "auto-follow-up",
-      metadata: {},
+      description: r.subject,
+      metadata: { templateId: "auto-follow-up", subject: r.subject },
     }));
   if (sentActivities.length > 0) {
     await supabase.from("activities").insert(sentActivities);

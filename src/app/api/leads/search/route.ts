@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { findLeads as getMockLeads } from "@/lib/leadsData";
 import { getCachedLead, setCachedLead, wasRecentlyCheckedWithNoEmail, markLeadCheckedNoEmail } from "@/lib/leadsCache";
 import { getSupabaseServerClient, isSupabaseConfigured } from "@/lib/supabase";
+import { normalizeIndustry } from "@/lib/industryTaxonomy";
 
 async function appendCRMStatus(leads: any[]): Promise<any[]> {
   if (isSupabaseConfigured() && leads.length > 0) {
@@ -244,7 +245,7 @@ export async function GET(req: NextRequest) {
         email: "", // Will crawl/resolve next if website exists
         phone,
         website,
-        industry: query.split(" in ")[0]?.trim() || "Business",
+        industry: normalizeIndustry(query.split(" in ")[0] || ""),
         city,
         placeId: listing.place_id || null,
         address: listing.address || null,

@@ -162,6 +162,15 @@ export async function POST(req: NextRequest) {
             .update({ last_contacted_at: new Date().toISOString() })
             .eq("id", leadId);
 
+          // Move a fresh lead to "Contacted" on first outreach — every send path goes
+          // through this route, so this is the single place status should update
+          // (only bump from "New"; never downgrade a lead already further in the pipeline).
+          await supabase
+            .from("leads")
+            .update({ status: "Contacted" })
+            .eq("id", leadId)
+            .eq("status", "New");
+
           await supabase.from("activities").insert({
             lead_id: leadId,
             type: "email_sent",

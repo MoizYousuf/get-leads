@@ -10,6 +10,7 @@ import { FilterBar } from "./components/FilterBar";
 import { BulkActionsBar } from "./components/BulkActionsBar";
 import { OverdueAlertBanner } from "./components/OverdueAlertBanner";
 import { ProposalsSummary } from "./components/ProposalsSummary";
+import { TemplatePerformance } from "./components/TemplatePerformance";
 import { LeadsTable } from "./components/LeadsTable";
 import { KanbanBoard } from "./components/KanbanBoard";
 import { AddLeadModal, type NewLeadData } from "./components/AddLeadModal";
@@ -636,6 +637,8 @@ export default function CRMDashboard() {
       />
 
       <ProposalsSummary proposals={proposals} />
+
+      <TemplatePerformance />
 
       {/* CRM Leads Table Panel */}
       {viewMode === "list" ? (

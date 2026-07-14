@@ -12,7 +12,10 @@ import {
   MapPin,
   History,
   Clock,
-  X
+  X,
+  Bookmark,
+  Play,
+  Trash2
 } from "lucide-react";
 import { containerVariants, itemVariants } from "@/lib/motion";
 
@@ -54,6 +57,10 @@ interface SearchConsoleProps {
   setWebsiteFilter: (v: "all" | "with-website" | "without-website") => void;
   outreachFilter: "all" | "sent" | "unsent";
   setOutreachFilter: (v: "all" | "sent" | "unsent") => void;
+  savedSearches: { id: string; query: string; lastRunAt: string | null; knownPlaceIds: string[] }[];
+  saveCurrentSearchAsRecurring: () => void;
+  runSavedSearch: (saved: { id: string; query: string; lastRunAt: string | null; knownPlaceIds: string[] }) => void;
+  deleteSavedSearch: (id: string) => void;
 }
 
 export default function SearchConsole({
@@ -82,6 +89,10 @@ export default function SearchConsole({
   setWebsiteFilter,
   outreachFilter,
   setOutreachFilter,
+  savedSearches,
+  saveCurrentSearchAsRecurring,
+  runSavedSearch,
+  deleteSavedSearch,
 }: SearchConsoleProps) {
   return (
     <motion.div
@@ -285,6 +296,15 @@ export default function SearchConsole({
           )}
           Search Target Leads
         </motion.button>
+
+        <button
+          type="button"
+          onClick={saveCurrentSearchAsRecurring}
+          className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-bold text-slate-500 hover:text-sky-600 border border-dashed border-slate-300 hover:border-sky-300 transition-all cursor-pointer"
+        >
+          <Bookmark className="w-3.5 h-3.5" />
+          Save as Recurring Search (track new leads over time)
+        </button>
       </form>
 
       {/* Suggested Queries */}
@@ -325,6 +345,49 @@ export default function SearchConsole({
               </motion.button>
             ))}
           </motion.div>
+        </div>
+      )}
+
+      {/* Saved / Recurring Searches */}
+      {savedSearches.length > 0 && (
+        <div className="space-y-2">
+          <span className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
+            <Bookmark className="w-3.5 h-3.5 text-sky-500" />
+            Saved Searches
+          </span>
+          <div className="space-y-1.5">
+            {savedSearches.map((s) => (
+              <div
+                key={s.id}
+                className="flex items-center justify-between gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5"
+              >
+                <div className="min-w-0">
+                  <div className="text-xs font-semibold text-slate-700 truncate">{s.query}</div>
+                  <div className="text-[10px] text-slate-500">
+                    {s.lastRunAt ? `Last run ${new Date(s.lastRunAt).toLocaleString()}` : "Never run"}
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => runSavedSearch(s)}
+                    className="p-2 rounded-lg bg-sky-500 hover:bg-sky-600 text-white transition-colors cursor-pointer"
+                    title="Run search and show new leads since last run"
+                  >
+                    <Play className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => deleteSavedSearch(s.id)}
+                    className="p-2 rounded-lg bg-white border border-slate-200 hover:border-red-300 hover:text-red-500 text-slate-500 transition-colors cursor-pointer"
+                    title="Delete saved search"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

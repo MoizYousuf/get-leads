@@ -19,6 +19,7 @@ interface Recipient {
   website?: string;
   phone?: string;
   industry?: string;
+  emailSource?: "crawl" | "enrich" | "guess" | "" | null;
 }
 
 // Utility to replace placeholders in templates: {{name}}, {{email}}, {{client_name}}, {{contact_person}}, {{city}}, {{industry}}
@@ -45,7 +46,8 @@ const parseBulkRecipients = (text: string): Recipient[] => {
       const niche = parts[4]?.trim() || "";
       const website = parts[5]?.trim() || "";
       const phone = parts[6]?.trim() || "";
-      return { email, name, contact_person, city, niche, website, phone, industry: niche };
+      const emailSource = (parts[7]?.trim() || "") as Recipient["emailSource"];
+      return { email, name, contact_person, city, niche, website, phone, industry: niche, emailSource };
     })
     .filter(r => r.email.includes("@")); // Ensure basic validity
 };
@@ -72,6 +74,7 @@ export default function EmailComposer() {
   // Send delay config (seconds)
   const [sendDelay, setSendDelay] = useState(3);
   const [includeScreenshot, setIncludeScreenshot] = useState(false);
+  const [verifiedOnly, setVerifiedOnly] = useState(false);
 
   // State for email sending progress
   const [sendState, setSendState] = useState<"idle" | "sending" | "success" | "error">("idle");
@@ -255,6 +258,9 @@ export default function EmailComposer() {
       recipients = [{ email: to, name: clientName, website: activeLeadDetails?.website }];
     } else {
       recipients = parseBulkRecipients(bulkRecipientsText);
+      if (verifiedOnly) {
+        recipients = recipients.filter(r => r.emailSource === "crawl" || r.emailSource === "enrich" || !r.emailSource);
+      }
       if (recipients.length === 0) {
         setErrorMsg("Please enter at least one valid recipient in 'email, name' format.");
         setSendState("error");
@@ -683,6 +689,19 @@ export default function EmailComposer() {
               />
               Attach a live screenshot of the recipient&apos;s website (when a website URL is known)
             </label>
+
+            {sendMode === "bulk" && (
+              <label className="flex items-center gap-2 text-xs font-medium text-slate-600 select-none cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={verifiedOnly}
+                  onChange={(e) => setVerifiedOnly(e.target.checked)}
+                  disabled={sendState === "sending"}
+                  className="h-4 w-4 rounded border-slate-300 text-accent focus:ring-accent"
+                />
+                Skip unverified (guessed) emails to reduce bounce rate
+              </label>
+            )}
 
             {/* Common Inputs */}
             <div className="space-y-1.5">

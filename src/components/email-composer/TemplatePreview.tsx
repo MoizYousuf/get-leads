@@ -27,6 +27,8 @@ export default function TemplatePreview({ preview, sendMode }: TemplatePreviewPr
 
       {/* Email mock envelope */}
       <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-md">
+        {/* Brand accent bar */}
+        <div className="h-1 bg-linear-to-r from-primary to-accent" />
         {/* Header metadata */}
         <div className="bg-slate-50 p-4 border-b border-slate-200 space-y-2 text-xs text-slate-500">
           <div className="flex items-center gap-2">
@@ -68,19 +70,12 @@ export default function TemplatePreview({ preview, sendMode }: TemplatePreviewPr
                 {preview.body || "Write your message details to preview how the client will read it..."}
               </div>
 
-              {/* Premium Call to Action Button */}
-              <div className="py-4 text-center">
-                <span className="inline-block px-6 py-3 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white font-extrabold text-[11px] uppercase tracking-widest rounded-xl shadow-md cursor-pointer select-none transition-all hover:scale-102">
-                  Schedule a Complimentary Strategy Call
-                </span>
-              </div>
-
               {/* Corporate Signature block */}
               <div className="pt-6 border-t border-slate-100">
                 <p className="m-0 text-xs font-semibold text-slate-500">Best regards,</p>
-                <p className="mt-1.5 mb-0.5 text-sm font-black text-indigo-600">Khanani Innovations Team</p>
+                <p className="mt-1.5 mb-0.5 text-sm font-black text-primary">Khanani Innovations Team</p>
                 <p className="m-0 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Web Development & Automation Solutions</p>
-                <p className="mt-1 mb-0 text-xs text-sky-600 font-semibold">
+                <p className="mt-1 mb-0 text-xs text-accent font-semibold">
                   <a href="https://khananiinnovations.com" target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="hover:underline">
                     khananiinnovations.com
                   </a>

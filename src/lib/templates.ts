@@ -107,16 +107,20 @@ export function generateEmailHtml(
             max-width: 600px;
             margin: 40px auto;
             background-color: #ffffff;
-            border-radius: 12px;
+            border-radius: 14px;
             overflow: hidden;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
             border: 1px solid #f3f4f6;
           }
+          .accent-bar {
+            height: 4px;
+            background: linear-gradient(90deg, #0F172A 0%, #0369A1 100%);
+          }
           .header {
             background-color: #ffffff;
-            padding: 32px 24px;
+            padding: 28px 24px 24px;
             text-align: center;
-            border-b: 1px solid #f3f4f6;
+            border-bottom: 1px solid #f3f4f6;
           }
           .logo-text {
             font-size: 24px;
@@ -160,6 +164,7 @@ export function generateEmailHtml(
       </head>
       <body>
         <div class="container">
+          <div class="accent-bar"></div>
           <div class="header">
             ${
               hasLogo && logoUrl
@@ -170,16 +175,11 @@ export function generateEmailHtml(
           <div class="content">
             ${formattedBody}
             ${screenshotBlock}
-            <div style="text-align: center; margin: 36px 0 28px 0;">
-              <a href="https://khananiinnovations.com" target="_blank" style="background: linear-gradient(135deg, #0F172A 0%, #0369A1 100%); color: #ffffff !important; padding: 12px 28px; border-radius: 8px; text-decoration: none; font-size: 11px; font-weight: bold; letter-spacing: 0.05em; text-transform: uppercase; display: inline-block; box-shadow: 0 4px 10px rgba(3, 105, 161, 0.25);">
-                Schedule a Free Strategy Call
-              </a>
-            </div>
             <div class="divider"></div>
             <p style="margin: 0; font-size: 13px; font-weight: 500; color: #6b7280;">Best regards,</p>
-            <p style="margin: 6px 0 2px 0; font-size: 14px; font-weight: 800; color: #0369A1;">Khanani Innovations Team</p>
+            <p style="margin: 6px 0 2px 0; font-size: 15px; font-weight: 800; color: #0F172A;">Khanani Innovations Team</p>
             <p style="margin: 0; font-size: 10px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.05em;">Web Development & Automation Solutions</p>
-            <p style="margin: 6px 0 0 0; font-size: 12px; font-weight: 600; color: #0369A1;"><a href="https://khananiinnovations.com" target="_blank" style="color: #0369A1; text-decoration: none;">khananiinnovations.com</a></p>
+            <p style="margin: 6px 0 0 0; font-size: 12px; font-weight: 600;"><a href="https://khananiinnovations.com" target="_blank" style="color: #0369A1; text-decoration: none;">khananiinnovations.com</a></p>
           </div>
           <div class="footer">
             <p style="margin: 0 0 8px 0;">&copy; ${new Date().getFullYear()} <a href="https://khananiinnovations.com" target="_blank" style="color: #0369A1; text-decoration: none;">Khanani Innovations</a>. All rights reserved.</p>

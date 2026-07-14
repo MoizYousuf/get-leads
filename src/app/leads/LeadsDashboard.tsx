@@ -28,6 +28,14 @@ export default function LeadsDashboard() {
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [showRecentDropdown, setShowRecentDropdown] = useState(false);
 
+  interface SavedSearch {
+    id: string;
+    query: string;
+    lastRunAt: string | null;
+    knownPlaceIds: string[];
+  }
+  const [savedSearches, setSavedSearches] = useState<SavedSearch[]>([]);
+
   // Dropdown open states
   const [countryOpen, setCountryOpen] = useState(false);
   const [cityOpen, setCityOpen] = useState(false);
@@ -124,10 +132,64 @@ export default function LeadsDashboard() {
       if (savedRecent) {
         setRecentSearches(JSON.parse(savedRecent));
       }
+
+      const savedRecurring = localStorage.getItem("khanani_saved_searches");
+      if (savedRecurring) {
+        setSavedSearches(JSON.parse(savedRecurring));
+      }
     } catch (e) {
       console.error("Failed to load sent history, recent searches or popular queries in Lead Finder:", e);
     }
   }, []);
+
+  const persistSavedSearches = (updated: SavedSearch[]) => {
+    setSavedSearches(updated);
+    try {
+      localStorage.setItem("khanani_saved_searches", JSON.stringify(updated));
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const saveCurrentSearchAsRecurring = () => {
+    if (!niche.trim()) {
+      setToastMessage("Enter a niche/industry before saving a search.");
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+      return;
+    }
+    const locationParts = [city === "All" ? "" : city.trim(), country === "All" ? "" : country.trim()].filter(Boolean).join(", ");
+    const query = locationParts ? `${niche.trim()} in ${locationParts}` : niche.trim();
+
+    if (savedSearches.some(s => s.query.toLowerCase() === query.toLowerCase())) {
+      setToastMessage("This search is already saved.");
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+      return;
+    }
+
+    // Seed knownPlaceIds with whatever's currently on screen so the first "Run" only
+    // flags leads that are genuinely new since today, not the entire result set.
+    const knownPlaceIds = leads.map(l => l.placeId).filter(Boolean) as string[];
+    const newSaved: SavedSearch = {
+      id: `saved_${Date.now()}`,
+      query,
+      lastRunAt: new Date().toISOString(),
+      knownPlaceIds,
+    };
+    persistSavedSearches([newSaved, ...savedSearches]);
+    setToastMessage(`Saved recurring search: "${query}"`);
+    setShowToast(true);
+    setTimeout(() => setShowToast(false), 3000);
+  };
+
+  const deleteSavedSearch = (id: string) => {
+    persistSavedSearches(savedSearches.filter(s => s.id !== id));
+  };
+
+  const runSavedSearch = (saved: SavedSearch) => {
+    handleSearch(undefined, saved.query, 0, saved.id);
+  };
 
   const updatePopularQueries = (newQuery: string) => {
     if (!newQuery || !newQuery.trim()) return;
@@ -233,7 +295,7 @@ export default function LeadsDashboard() {
     setCity("All");
   }, [country]);
 
-  const handleSearch = async (e?: React.FormEvent, customQuery?: string, offset: number = 0) => {
+  const handleSearch = async (e?: React.FormEvent, customQuery?: string, offset: number = 0, savedSearchId?: string) => {
     if (e) e.preventDefault();
     
     let searchQuery = "";
@@ -314,8 +376,44 @@ export default function LeadsDashboard() {
           setLeads(newLeads);
           setSelectedLeadIds(new Set()); // Reset selections
           setSearched(true);
+
+          // If this run came from a saved/recurring search, diff against what we saw
+          // last time so the user knows exactly how many genuinely new leads showed up.
+          if (savedSearchId) {
+            setSavedSearches(prevSaved => {
+              const saved = prevSaved.find(s => s.id === savedSearchId);
+              if (!saved) return prevSaved;
+
+              const knownSet = new Set(saved.knownPlaceIds);
+              const newCount = newLeads.filter((l: Lead) => l.placeId && !knownSet.has(l.placeId)).length;
+
+              setToastMessage(
+                newCount > 0
+                  ? `${newCount} new lead${newCount === 1 ? "" : "s"} since last run of "${saved.query}"`
+                  : `No new leads since last run of "${saved.query}"`
+              );
+              setShowToast(true);
+              setTimeout(() => setShowToast(false), 4000);
+
+              const updated = prevSaved.map(s =>
+                s.id === savedSearchId
+                  ? {
+                      ...s,
+                      lastRunAt: new Date().toISOString(),
+                      knownPlaceIds: Array.from(new Set([...s.knownPlaceIds, ...newLeads.map((l: Lead) => l.placeId).filter(Boolean)])) as string[],
+                    }
+                  : s
+              );
+              try {
+                localStorage.setItem("khanani_saved_searches", JSON.stringify(updated));
+              } catch (err) {
+                console.error(err);
+              }
+              return updated;
+            });
+          }
         }
-        
+
         if (result.fallback) {
           setIsFallback(true);
           setToastMessage(result.error || "Using simulated database (SERPAPI_API_KEY missing)");
@@ -656,7 +754,7 @@ export default function LeadsDashboard() {
 
     // Format as CSV format compatible with bulk composer parser (email, name, owner, city, industry, website, phone)
     const bulkCsvText = selectedLeads
-      .map(l => `${l.email}, ${l.name || ""}, ${l.owner || ""}, ${l.city || ""}, ${l.industry || ""}, ${l.website || ""}, ${l.phone || ""}`)
+      .map(l => `${l.email}, ${l.name || ""}, ${l.owner || ""}, ${l.city || ""}, ${l.industry || ""}, ${l.website || ""}, ${l.phone || ""}, ${l.emailSource || ""}`)
       .join("\n");
 
     // Route to composer page, setting up bulk search params
@@ -819,6 +917,10 @@ export default function LeadsDashboard() {
         setWebsiteFilter={setWebsiteFilter}
         outreachFilter={outreachFilter}
         setOutreachFilter={setOutreachFilter}
+        savedSearches={savedSearches}
+        saveCurrentSearchAsRecurring={saveCurrentSearchAsRecurring}
+        runSavedSearch={runSavedSearch}
+        deleteSavedSearch={deleteSavedSearch}
       />
 
       {/* Leads Results Grid/Table */}
